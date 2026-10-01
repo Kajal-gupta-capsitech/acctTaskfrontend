@@ -25,6 +25,7 @@ import {
 import {
   ArrowLeftRegular,
   AddRegular,
+  Delete16Regular,
   Save20Regular,
   ChevronDown20Regular,
 } from "@fluentui/react-icons";
@@ -40,243 +41,7 @@ import { useChartAccount } from "../../../context/ChartAccountContext/ChartAccou
 import { useAccountingPeriod } from "../../../context/AccountingPeriodContext/AccountingPeriodContext";
 import { useEffect } from "react";
 
-// const useStyles = makeStyles({
-
-//   page: {
-//     width: "100%",
-//     boxSizing: "border-box",
-//     padding: "0 28px 28px",
-//   },
-
-//   content: {
-//     width: "100%",
-//     maxWidth: "820px",
-//     margin: "0 auto",
-//   },
-
-//   header: {
-//     display: "flex",
-//     alignItems: "center",
-//     gap: "8px",
-//     padding: "14px 0 18px",
-//     borderBottom: "1px solid #eeeeee",
-//     marginBottom: "30px",
-//   },
-
-//   title: {
-//     fontSize: "18px",
-//     fontWeight: 600,
-//     color: "#171717",
-//   },
-
-//   draft: {
-//     display: "inline-flex",
-//     alignItems: "center",
-//     padding: "3px 8px",
-//     marginLeft: "2px",
-//     backgroundColor: "#e8e8e8",
-//     color: "#333333",
-//     borderRadius: "4px",
-//     fontSize: "12px",
-//     lineHeight: "18px",
-//   },
-
-//   topForm: {
-//     width: "100%",
-//     maxWidth: "760px",
-//   },
-
-//   field: {
-//     marginBottom: "12px",
-//   },
-
-//   refInput: {
-//     width: "250px",
-//   },
-
-//   periodDropdown: {
-//     width: "375px",
-//     maxWidth: "100%",
-//   },
-
-//   journalDropdown: {
-//     width: "375px",
-//     maxWidth: "100%",
-//   },
-
-//   description: {
-//     width: "100%",
-//   },
-
-//   attachment: {
-//     width: "100%",
-//     minHeight: "60px",
-//     border: "2px dashed #eeeeee",
-//     display: "flex",
-//     alignItems: "center",
-//     justifyContent: "center",
-//     boxSizing: "border-box",
-//     cursor: "pointer",
-//     color: "#333333",
-//     fontSize: "14px",
-//     marginTop: "4px",
-//   },
-
-//   attachmentInput: {
-//     display: "none",
-//   },
-
-//   accountButtonContainer: {
-//     display: "flex",
-//     justifyContent: "flex-end",
-//     marginBottom: "12px",
-//   },
-
-//   accountButton: {
-//     backgroundColor: "#3f82e8",
-//     color: "#ffffff",
-
-//     ":hover": {
-//       backgroundColor: "#3475d4",
-//     },
-//   },
-
-//   tableWrapper: {
-//     width: "100%",
-//     marginTop: "12px",
-//     overflowX: "auto",
-//   },
-
-//   table: {
-//     width: "100%",
-//     minWidth: "680px",
-//     borderCollapse: "collapse",
-//   },
-
-//   headerCell: {
-//     fontWeight: 700,
-//     fontSize: "14px",
-//     color: "#171717",
-//     padding: "8px 10px",
-//     borderBottom: "2px solid #dddddd",
-//   },
-
-//   tableCell: {
-//     padding: "8px 10px",
-//     borderBottom: "1px solid #eeeeee",
-//     verticalAlign: "middle",
-//   },
-
-//   lineNo: {
-//     width: "70px",
-//     textAlign: "center",
-//   },
-
-//   accountCell: {
-//     minWidth: "330px",
-//   },
-
-//   accountDropdown: {
-//     width: "100%",
-//   },
-
-//   amountCell: {
-//     width: "140px",
-//   },
-
-//   amountInput: {
-//     width: "100%",
-//   },
-
-//   addCell: {
-//     width: "45px",
-//     textAlign: "center",
-//   },
-
-//   totals: {
-//     width: "300px",
-//     marginLeft: "auto",
-//     marginTop: "10px",
-//   },
-
-//   totalRow: {
-//     display: "flex",
-//     alignItems: "center",
-//     justifyContent: "flex-end",
-//     gap: "12px",
-//     minHeight: "42px",
-//   },
-
-//   totalLabel: {
-//     minWidth: "70px",
-//     textAlign: "right",
-//     fontSize: "14px",
-//     color: "#171717",
-//   },
-
-//   totalInput: {
-//     width: "155px",
-//   },
-
-//   statusInput: {
-//     width: "225px",
-//   },
-
-//   profitLabel: {
-//     minWidth: "225px",
-//     textAlign: "left",
-//     fontSize: "14px",
-//   },
-
-//   footer: {
-//     display: "flex",
-//     justifyContent: "space-between",
-//     alignItems: "center",
-//     marginTop: "30px",
-//     paddingBottom: "10px",
-//   },
-
-//   saveButton: {
-//     backgroundColor: "#3f82e8",
-//     color: "#ffffff",
-
-//     ":hover": {
-//       backgroundColor: "#3475d4",
-//     },
-//   },
-
-//   "@media (max-width: 700px)": {
-//     page: {
-//       padding: "0 16px 20px",
-//     },
-
-//     content: {
-//       maxWidth: "100%",
-//     },
-
-//     periodDropdown: {
-//       width: "100%",
-//     },
-
-//     journalDropdown: {
-//       width: "100%",
-//     },
-
-//     refInput: {
-//       width: "100%",
-//     },
-
-//     totals: {
-//       width: "100%",
-//       maxWidth: "350px",
-//     },
-
-//     footer: {
-//       flexDirection: "row",
-//       gap: "12px",
-//     },
-//   },
-// });
+import { useLocation } from "react-router-dom";
 
 const useStyles = makeStyles({
   page: {
@@ -522,7 +287,11 @@ const JOURNAL_TYPES = [
 const CreateTrialBalance = () => {
   const styles = useStyles();
   const navigate = useNavigate();
+  const location = useLocation();
   const { trialBalanceId } = useParams();
+
+  const csvImportMode = location.state?.importMode === "csv";
+  const importedCsvRows = location.state?.csvRows || [];
 
   const { getTrialBalanceById, updateTrialBalance } = useTrialBalance();
 
@@ -547,15 +316,17 @@ const CreateTrialBalance = () => {
     file: null,
   });
 
-  const [lines, setLines] = React.useState([
-    {
-      lineNo: 1,
-      accountId: "",
-      debit: "",
-      credit: "",
-      accountNature: null,
-    },
-  ]);
+  // const [lines, setLines] = React.useState([
+  //   {
+  //     lineNo: 1,
+  //     accountId: "",
+  //     debit: "",
+  //     credit: "",
+  //     accountNature: null,
+  //   },
+  // ]);
+
+  const [lines, setLines] = React.useState([]);
 
   const debitRefs = React.useRef([]);
   const creditRefs = React.useRef([]);
@@ -606,6 +377,45 @@ const CreateTrialBalance = () => {
     };
   }, [trialBalanceId]);
 
+  useEffect(() => {
+    if (loading) return;
+
+    if (csvImportMode && importedCsvRows.length > 0) {
+      const mappedLines = importedCsvRows.map((row, index) => {
+        const account = (chartAccounts || []).find(
+          (item) =>
+            String(item.code || "").trim() ===
+            String(row.accountCode || "").trim(),
+        );
+
+        const accountNature = getAccountNature(account);
+
+        return {
+          lineNo: index + 1,
+          accountId: account?.id || "",
+          debit: row.debit || "",
+          credit: row.credit || "",
+          accountNature,
+        };
+      });
+
+      setLines(mappedLines);
+      return;
+    }
+
+    // Manual mode starts with one empty row
+    if (!csvImportMode) {
+      setLines([
+        {
+          lineNo: 1,
+          accountId: "",
+          debit: "",
+          credit: "",
+          accountNature: null,
+        },
+      ]);
+    }
+  }, [loading, csvImportMode, importedCsvRows, chartAccounts]);
   /* ---------------------------------------------------------
    * HELPERS
    * --------------------------------------------------------- */
@@ -671,91 +481,78 @@ const CreateTrialBalance = () => {
   /* ---------------------------------------------------------
    * ACCOUNT SELECTION
    * --------------------------------------------------------- */
-  const handleAccountChange = (index, accountId) => {
-    const account = getAccountById(accountId);
-    const nature = getAccountNature(account);
+const handleAccountChange = (index, accountId) => {
+  const account = getAccountById(accountId);
+  const nature = getAccountNature(account);
 
-    setLines((previous) =>
-      previous.map((line, lineIndex) => {
-        if (lineIndex !== index) return line;
+  setLines((previous) => {
+    const updated = previous.map((line, lineIndex) => {
+      if (lineIndex !== index) return line;
 
-        return {
-          ...line,
-          accountId,
-          accountNature: nature,
-          debit: "",
-          credit: "",
-        };
-      }),
-    );
+      return {
+        ...line,
+        accountId,
+        accountNature: nature,
+        debit: "",
+        credit: "",
+      };
+    });
 
-    setTimeout(() => {
-      if (nature === "debit") {
-        debitRefs.current[index]?.focus();
-      } else if (nature === "credit") {
-        creditRefs.current[index]?.focus();
-      }
-    }, 50);
-  };
-
-  /* ---------------------------------------------------------
-   * AMOUNT CHANGE
-   *
-   * Both fields stay enabled.
-   * Entering one side automatically sets the other side to 0.
-   * --------------------------------------------------------- */
-  // const handleAmountChange = (index, field, value) => {
-  //   if (
-  //     value !== "" &&
-  //     !/^\d*\.?\d*$/.test(value)
-  //   ) {
-  //     return;
-  //   }
-
-  //   setLines((previous) =>
-  //     previous.map((line, lineIndex) => {
-  //       if (lineIndex !== index) return line;
-
-  //       if (field === "debit") {
-  //         return {
-  //           ...line,
-  //           debit: value,
-  //           credit: "0",
-  //         };
-  //       }
-
-  //       return {
-  //         ...line,
-  //         debit: "0",
-  //         credit: value,
-  //       };
-  //     })
-  //   );
-  // };
-
-  const handleAmountChange = (index, field, value) => {
-    if (value !== "" && !/^\d*\.?\d*$/.test(value)) {
-      return;
+    // If this was the last empty row,
+    // create a new empty row.
+    if (index === updated.length - 1 && accountId) {
+      return ensureLastEmptyRow(updated);
     }
 
-    setLines((previous) =>
-      previous.map((line, lineIndex) => {
-        if (lineIndex !== index) {
-          return line;
-        }
+    return updated;
+  });
 
-        return {
-          ...line,
-          [field]: value,
+  setTimeout(() => {
+    if (nature === "debit") {
+      debitRefs.current[index]?.focus();
+    } else if (nature === "credit") {
+      creditRefs.current[index]?.focus();
+    }
+  }, 50);
+};
 
-          // Keep both fields enabled.
-          // If one side is entered, automatically set
-          // the other side to zero.
-          ...(field === "debit" ? { credit: "0" } : { debit: "0" }),
-        };
-      }),
-    );
-  };
+
+
+
+const handleAmountChange = (index, field, value) => {
+  if (value !== "" && !/^\d*\.?\d*$/.test(value)) {
+    return;
+  }
+
+  setLines((previous) => {
+    const updated = previous.map((line, lineIndex) => {
+      if (lineIndex !== index) {
+        return line;
+      }
+
+      return {
+        ...line,
+        [field]: value,
+
+        ...(field === "debit"
+          ? { credit: "0" }
+          : { debit: "0" }),
+      };
+    });
+
+    // If user entered an amount in the last row,
+    // create a new empty row.
+    if (
+      index === updated.length - 1 &&
+      value !== ""
+    ) {
+      return ensureLastEmptyRow(updated);
+    }
+
+    return updated;
+  });
+};
+
 
   /* ---------------------------------------------------------
    * ADD JOURNAL LINE
@@ -773,63 +570,48 @@ const CreateTrialBalance = () => {
     ]);
   };
 
+  const ensureLastEmptyRow = (lines) => {
+  const lastLine = lines[lines.length - 1];
+
+  const lastLineHasValue =
+    lastLine.accountId ||
+    lastLine.debit ||
+    lastLine.credit;
+
+  if (lastLineHasValue) {
+    return [
+      ...lines,
+      {
+        lineNo: lines.length + 1,
+        accountId: "",
+        debit: "",
+        credit: "",
+        accountNature: null,
+      },
+    ];
+  }
+
+  return lines;
+};
+
+  const deleteLine = (index) => {
+    setLines((previous) => {
+      if (previous.length <= 1) {
+        return previous;
+      }
+
+      return previous
+        .filter((_, lineIndex) => lineIndex !== index)
+        .map((line, lineIndex) => ({
+          ...line,
+          lineNo: lineIndex + 1,
+        }));
+    });
+  };
+
   /* ---------------------------------------------------------
    * TOTALS
    * --------------------------------------------------------- */
-  //   const totalDebit = React.useMemo(() => {
-  //     return lines.reduce(
-  //       (total, line) =>
-  //         total + (parseFloat(line.debit) || 0),
-  //       0
-  //     );
-  //   }, [lines]);
-
-  //   const totalCredit = React.useMemo(() => {
-  //     return lines.reduce(
-  //       (total, line) =>
-  //         total + (parseFloat(line.credit) || 0),
-  //       0
-  //     );
-  //   }, [lines]);
-
-  //   const balanceAmount = Math.abs(
-  //     totalDebit - totalCredit
-  //   );
-
-  //   const balanceSide =
-  //     totalDebit > totalCredit
-  //       ? "Debit"
-  //       : totalCredit > totalDebit
-  //         ? "Credit"
-  //         : "";
-
-  //   const isBalanced =
-  //     Math.abs(totalDebit - totalCredit) < 0.000001;
-
-  //   /*
-  //    * IMPORTANT:
-  //    * Do not calculate accounting P&L from debit/credit totals.
-  //    * Real P&L requires account classification.
-  //    */
-  //   // const profitLoss = 0;
-
-  //   const profitLossAmount = Math.abs(totalDebit - totalCredit);
-
-  // const profitLossLabel =
-  //   totalCredit > totalDebit
-  //     ? "Profit"
-  //     : totalDebit > totalCredit
-  //       ? "Loss"
-  //       : "Profit / Loss";
-
-  //   /*
-  //    * Turnover is the calculated larger side.
-  //    * This fixes credit-only journals as well as debit-only journals.
-  //    */
-  //   const turnover = Math.max(
-  //     totalDebit,
-  //     totalCredit
-  //   );
 
   const totalDebit = React.useMemo(() => {
     return lines.reduce(
@@ -918,69 +700,53 @@ const CreateTrialBalance = () => {
   //   }
   // };
 
-
   const handleSave = async () => {
+    if (!trialBalanceId) {
+      alert("Trial Balance ID is missing.");
+      return;
+    }
 
-  if (!trialBalanceId) {
-    alert("Trial Balance ID is missing.");
-    return;
-  }
+    if (!formData.accountingPeriodId) {
+      alert("Please select an accounting period.");
+      return;
+    }
 
-  if (!formData.accountingPeriodId) {
-    alert("Please select an accounting period.");
-    return;
-  }
+    // Prevent saving an unbalanced trial balance
+    if (!isBalanced) {
+      alert(
+        `Amount is not balanced. Debit and Credit must be equal.\n\n` +
+          `Debit: ${formatCurrency(totalDebit)}\n` +
+          `Credit: ${formatCurrency(totalCredit)}\n` +
+          `Difference: ${formatCurrency(balanceAmount)}`,
+      );
 
-  // Prevent saving an unbalanced trial balance
-  if (!isBalanced) {
-    alert(
-      `Amount is not balanced. Debit and Credit must be equal.\n\n` +
-      `Debit: ${formatCurrency(totalDebit)}\n` +
-      `Credit: ${formatCurrency(totalCredit)}\n` +
-      `Difference: ${formatCurrency(balanceAmount)}`
-    );
+      return;
+    }
 
-    return;
-  }
+    try {
+      setSaving(true);
 
-  try {
-    setSaving(true);
+      const payload = {
+        journalType: Number(formData.journalType ?? 0),
+        accountingPeriodId: formData.accountingPeriodId || null,
+        description: formData.description || null,
+        turnover,
+        status: 1,
+      };
 
-    const payload = {
-      journalType: Number(formData.journalType ?? 0),
-      accountingPeriodId:
-        formData.accountingPeriodId || null,
-      description:
-        formData.description || null,
-      turnover,
-      status: 1,
-    };
+      console.log("PATCH Trial Balance payload:", payload);
 
-    console.log(
-      "PATCH Trial Balance payload:",
-      payload
-    );
+      await updateTrialBalance(trialBalanceId, payload);
 
-    await updateTrialBalance(
-      trialBalanceId,
-      payload
-    );
+      navigate(-1);
+    } catch (error) {
+      console.error("Failed to update Trial Balance:", error);
 
-    navigate(-1);
-
-  } catch (error) {
-    console.error(
-      "Failed to update Trial Balance:",
-      error
-    );
-
-    alert(
-      "Failed to save Trial Balance. Please check the API response."
-    );
-  } finally {
-    setSaving(false);
-  }
-};
+      alert("Failed to save Trial Balance. Please check the API response.");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   /* ---------------------------------------------------------
    * LOADING
@@ -1102,15 +868,18 @@ const CreateTrialBalance = () => {
         </div>
 
         {/* ACCOUNT BUTTON */}
-        <div className={styles.accountButtonContainer}>
-          <Button
-            className={styles.accountButton}
-            icon={<AddRegular />}
-            onClick={addLine}
-          >
-            Account
-          </Button>
-        </div>
+        {!csvImportMode && (
+          <div className={styles.accountButtonContainer}>
+            <Button
+              className={styles.accountButton}
+              icon={<AddRegular />}
+              onClick={addLine}
+            >
+              Account
+            </Button>
+          </div>
+        )}
+      
 
         {/* JOURNAL TABLE */}
         <div className={styles.tableWrapper}>
@@ -1129,7 +898,10 @@ const CreateTrialBalance = () => {
                 <TableHeaderCell className={styles.headerCell}>
                   Credit (£)
                 </TableHeaderCell>
-                <TableHeaderCell />
+                <TableHeaderCell className={styles.headerCell}>
+                  Actions
+                </TableHeaderCell>
+                {/* <TableHeaderCell /> */}
               </TableRow>
             </TableHeader>
 
@@ -1193,16 +965,62 @@ const CreateTrialBalance = () => {
                   </TableCell>
 
                   {/* ADD */}
+
                   <TableCell
+  className={`${styles.tableCells} ${styles.addCell}`}
+>
+  {index === lines.length - 1 ? (
+    <Button
+      appearance="subtle"
+      icon={<AddRegular />}
+      onClick={addLine}
+      aria-label="Add journal line"
+      title="Add journal line"
+      disabled={
+        !line.accountId &&
+        !line.debit &&
+        !line.credit
+      }
+    />
+  ) : (
+    <Button
+      appearance="subtle"
+      icon={<Delete16Regular />}
+      onClick={() => deleteLine(index)}
+      aria-label="Delete journal line"
+      title="Delete journal line"
+    />
+  )}
+</TableCell>
+                  {/* <TableCell
                     className={`${styles.tableCells} ${styles.addCell}`}
                   >
-                    <Button
-                      appearance="subtle"
-                      icon={<AddRegular />}
-                      onClick={addLine}
-                      aria-label="Add journal line"
-                    />
-                  </TableCell>
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: "4px",
+                      }}
+                    >
+                      <Button
+                        appearance="subtle"
+                        icon={<Delete16Regular />}
+                        onClick={() => deleteLine(index)}
+                        disabled={lines.length <= 1}
+                        aria-label="Delete journal line"
+                        title="Delete journal line"
+                      />
+
+                      <Button
+                        appearance="subtle"
+                        icon={<AddRegular />}
+                        onClick={addLine}
+                        aria-label="Add journal line"
+                        title="Add journal line"
+                      />
+                    </div>
+                  </TableCell> */}
                 </TableRow>
               ))}
             </TableBody>
@@ -1245,14 +1063,7 @@ const CreateTrialBalance = () => {
             />
           </div>
 
-          {/* <div className={styles.totalRow}>
-            <span className={styles.totalLabel}>
-              Profit / Loss
-            </span>
-            <span className={styles.profitLabel}>
-              {formatCurrency(profitLoss)}
-            </span>
-          </div> */}
+    
 
           <div className={styles.totalRow}>
             <span className={styles.totalLabel}>{profitLossLabel}</span>

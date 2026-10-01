@@ -375,102 +375,26 @@ const TrialBalance = () => {
   |--------------------------------------------------------------------------
   */
 
-  // const trialBalanceFields = [
-  //   {
-  //     name: "trialBalanceType",
+const downloadCsvTemplate = () => {
+  const csvContent =
+    '"Account Code","Account Name","Debit","Credit"\n';
 
-  //     label: "Type",
+  const blob = new Blob([csvContent], {
+    type: "text/csv;charset=utf-8;",
+  });
 
-  //     type: "radio",
+  const url = URL.createObjectURL(blob);
 
-  //     required: true,
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "trial-balance-template.csv";
 
-  //     options: [
-  //       {
-  //         value: "statutory",
-  //         label: "Statutory",
-  //       },
-  //       {
-  //         value: "management",
-  //         label: "Management",
-  //       },
-  //     ],
-  //   },
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 
-
-  //   {
-  //     name: "accountingPeriodId",
-
-  //     label: "Period",
-
-  //     type: "select",
-
-  //     required: true,
-
-  //     placeholder: accountingPeriodLoading
-  //       ? "Loading periods..."
-  //       : "Select period",
-
-  //     options: accountingPeriods.map((period) => ({
-  //       value: period.id,
-
-  //       label: `${formatDate(
-  //         period.periodFrom
-  //       )} - ${formatDate(
-  //         period.periodTo
-  //       )}`,
-  //     })),
-  //   },
-
-
-  //   {
-  //     name: "importMode",
-
-  //     label: "Mode of Import",
-
-  //     type: "radio",
-
-  //     required: true,
-
-  //     options: [
-  //       {
-  //         value: "csv",
-  //         label: "CSV",
-  //       },
-  //       {
-  //         value: "manual",
-  //         label: "Manual",
-  //       },
-  //     ],
-  //   },
-
-
-  //   {
-  //     name: "importFormat",
-
-  //     label: "Import Format",
-
-  //     type: "select",
-
-  //     options: [
-  //       {
-  //         value: "default",
-  //         label: "Default",
-  //       },
-  //     ],
-  //   },
-
-
-  //   {
-  //     name: "file",
-
-  //     label: "CSV File",
-
-  //     type: "file",
-
-  //     accept: ".csv",
-  //   },
-  // ];
+  URL.revokeObjectURL(url);
+};
 
 
   const trialBalanceFields = [
@@ -662,6 +586,8 @@ const TrialBalance = () => {
   |--------------------------------------------------------------------------
   */
 
+
+
   {
     name: "file",
 
@@ -677,7 +603,21 @@ const TrialBalance = () => {
       value: "csv",
     },
   },
+  {
+  name: "csvTemplate",
+  label: "",
+  type: "link",
+  buttonLabel: "Download CSV Template",
+  onClick: downloadCsvTemplate,
+  showWhen: {
+    field: "importMode",
+    value: "csv",
+  },
+},
 ];
+
+
+
   /*
   |--------------------------------------------------------------------------
   | Initial Values
@@ -704,23 +644,85 @@ const TrialBalance = () => {
   */
 
 
-const handleSubmit = async (data) => {
+  const parseCsv = (text) => {
+  const lines = text
+    .split(/\r?\n/)
+    .filter((line) => line.trim() !== "");
+
+  if (lines.length < 2) {
+    return [];
+  }
+
+  const parseRow = (row) => {
+    const values = [];
+    let current = "";
+    let insideQuotes = false;
+
+    for (let i = 0; i < row.length; i++) {
+      const char = row[i];
+
+      if (char === '"') {
+        insideQuotes = !insideQuotes;
+      } else if (char === "," && !insideQuotes) {
+        values.push(current.trim());
+        current = "";
+      } else {
+        current += char;
+      }
+    }
+
+    values.push(current.trim());
+    console.log("Parsed CSV Row:", values);
+    return values;
+  };
+
+  const headers = parseRow(lines[0]).map((header) =>
+    header.replace(/^"|"$/g, "").trim()
+  );
+
+  return lines.slice(1).map((line) => {
+    const values = parseRow(line);
+
+    const row = {};
+
+    headers.forEach((header, index) => {
+      row[header] = (values[index] || "")
+        .replace(/^"|"$/g, "")
+        .trim();
+    });
+
+    return {
+      accountCode: row["Account Code"] || "",
+      accountName: row["Account Name"] || "",
+      debit: row["Debit"] || "",
+      credit: row["Credit"] || "",
+    };
+  });
+  };
+
+  const handleSubmit = async (data) => {
   try {
-    /*
-     * =====================================================
-     * CREATE FORM DATA
-     * =====================================================
-     */
     console.log("handleSubmit Data:", data);
+
+    let csvRows = [];
+
+    if (data.importMode === "csv" && data.file) {
+      const csvText = await data.file.text();
+
+      csvRows = parseCsv(csvText);
+
+      console.log("Parsed CSV Rows:", csvRows);
+
+      if (csvRows.length === 0) {
+        throw new Error(
+          "CSV file is empty or does not contain valid data."
+        );
+      }
+    }
 
     const payload = new FormData();
 
-    /*
-     * Trial Balance Type
-     *
-     * Statutory = 0
-     * Management = 1
-     */
+ 
     payload.append(
       "trialBalanceType",
       data.trialBalanceType === "statutory"
@@ -748,12 +750,6 @@ const handleSubmit = async (data) => {
       );
     }
 
-    /*
-     * Import Mode
-     *
-     * CSV    = 0
-     * Manual = 2
-     */
     payload.append(
       "importMode",
       data.importMode === "csv"
@@ -771,12 +767,6 @@ const handleSubmit = async (data) => {
       );
     }
 
-    /*
-     * CSV FILE
-     *
-     * IMPORTANT:
-     * Send the actual File object.
-     */
     if (
       data.importMode === "csv" &&
       data.file
@@ -788,15 +778,7 @@ const handleSubmit = async (data) => {
       );
     }
 
-    /*
-     * =====================================================
-     * DEBUG
-     * =====================================================
-     */
-
-    console.log(
-      "Trial Balance FormData:"
-    );
+    console.log("Trial Balance FormData:");
 
     for (const [key, value] of payload.entries()) {
       console.log(
@@ -811,15 +793,6 @@ const handleSubmit = async (data) => {
       );
     }
 
-    /*
-     * =====================================================
-     * CREATE TRIAL BALANCE
-     * =====================================================
-     */
-
-    console.log("payload:", payload);
-
-
     const createdTrialBalance =
       await createTrialBalance(payload);
 
@@ -828,11 +801,6 @@ const handleSubmit = async (data) => {
       createdTrialBalance
     );
 
-    /*
-     * =====================================================
-     * GET ID
-     * =====================================================
-     */
 
     const trialBalanceId =
       createdTrialBalance?.id;
@@ -843,19 +811,7 @@ const handleSubmit = async (data) => {
       );
     }
 
-    /*
-     * =====================================================
-     * CLOSE DRAWER
-     * =====================================================
-     */
-
     setIsDrawerOpen(false);
-
-    /*
-     * =====================================================
-     * MOVE TO JOURNAL PAGE
-     * =====================================================
-     */
 
     navigate(
       `/trial-balances/${trialBalanceId}/journal`,
@@ -863,6 +819,11 @@ const handleSubmit = async (data) => {
         state: {
           trialBalanceData:
             createdTrialBalance,
+          importMode: data.importMode,
+          csvRows:
+            data.importMode === "csv"
+              ? csvRows
+              : [],
         },
       }
     );
@@ -877,13 +838,7 @@ const handleSubmit = async (data) => {
       "Failed to create trial balance. Please check the data."
     );
   }
-};
-
-  /*
-  |--------------------------------------------------------------------------
-  | Loading
-  |--------------------------------------------------------------------------
-  */
+  };
 
   if (loading) {
     return (
@@ -900,11 +855,6 @@ const handleSubmit = async (data) => {
   }
 
 
-  /*
-  |--------------------------------------------------------------------------
-  | Error
-  |--------------------------------------------------------------------------
-  */
 
   if (error) {
     return (
