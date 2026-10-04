@@ -23,9 +23,9 @@ export const TrialBalanceProvider = ({ children }) => {
 
       const response = await api.get("/TrialBalances");
 
-      setTrialBalances(response.data);
+      setTrialBalances(response.data.result);
 
-      return response.data;
+      return response.data.result;
     } catch (err) {
       console.error(
         "Error fetching trial balances:",

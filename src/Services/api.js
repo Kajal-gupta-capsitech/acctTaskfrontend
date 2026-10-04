@@ -6,7 +6,7 @@ export async function getChartAccounts() {
     );
 
     if (!response.ok) {
-        throw new Error("Failed to fetch chart accounts");
+        throw new Error("Failed to fetch chart of accounts");
     }
 
     return response.json();

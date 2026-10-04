@@ -1,110 +1,69 @@
-import React from "react";
-//  import * as React from "react";
-// import type { JSXElement } from "@fluentui/react-components";
+import React, { useEffect, useState, useMemo, useCallback } from "react";
 import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbDivider,
-  BreadcrumbButton,
-  TabList,
-  Tab,
   Button,
-  Label,
   makeStyles,
 } from "@fluentui/react-components";
-import {
-  CalendarMonthFilled,
-  CalendarMonthRegular,
-  bundleIcon,
-} from "@fluentui/react-icons";
-import { Pivot, PivotItem } from "@fluentui/react";
-// import { PivotItem } from "@fluentui/react/lib-commonjs/Pivot";
 import { Add20Regular } from "@fluentui/react-icons";
 import TableComponent from "../../componenets/table/table";
 import AddDrawer from "../../componenets/addDrawer/AddDrawer";
 import { BreadCrumbs } from "../../componenets/breadCrumbs/BreadCrumbs";
+import { useAccountingPeriod } from "../../context/AccountingPeriodContext/AccountingPeriodContext";
+import { useToast } from "../../context/ToastContext/ToastContext";
+
 const useStyles = makeStyles({
   buttonContainer: {
-    marginTop: "2px",
-    display: "flex",
-    alignItems: "center",
-    gap: "4px",
-  },
-
-  addButton: {
-    color: "#888888",
-    backgroundColor: "transparent",
-    border: "none",
-    minWidth: "50px",
-    marginLeft: "12px",
-
-    ":hover": {
-      backgroundColor: "#f0f0f0",
-      color: "#919090",
-    },
-
-    ":hover::after": {
-      display: "none",
-    },
-  },
-  //   addIcon: {
-  //     color: "#0078D4",
-  //   },
-  addButtonContent: {
+    marginTop: "8px",
+    marginBottom: "12px",
     display: "flex",
     alignItems: "center",
     gap: "4px",
   },
 });
 
-const CalendarMonth = bundleIcon(CalendarMonthFilled, CalendarMonthRegular);
-const path = "https://www.bing.com/";
-
-
 const columns = [
-    {
-      columnKey: "sno",
-      label: "S.No.",
-    },
-    {
-      columnKey: "period",
-      label: "Period",
-    },
-    {
-      columnKey: "status",
-      label: "Status",
-    },
-     {
-      columnKey: "",
-      label: "",
-    },
-  ];
-
-  const items = [
-    {
-      sno: 1,
-      period: "2024-25",
-      status: "Active",
-    },
-    {
-      sno: 2,
-      period: "2023-24",
-      status: "Completed",
-    },
-    {
-      sno: 3,
-      period: "2022-23",
-      status: "Completed",
-    },
-  ];
+  {
+    columnKey: "sNo",
+    label: "S.No.",
+  },
+  {
+    columnKey: "period",
+    label: "Period",
+  },
+  {
+    columnKey: "status",
+    label: "Status",
+  },
+  {
+    columnKey: "action",
+    label: "",
+    type: "action",
+  },
+];
 
 const AccountingPeriod = () => {
-  const [selectedValue, setSelectedValue] = React.useState("tab1");
-  const [isAddDrawerOpen, setIsAddDrawerOpen] = React.useState(false);
-
   const styles = useStyles();
+  const { showSuccess, showError } = useToast();
 
-    const [isDrawerOpen, setIsDrawerOpen] = React.useState(false);
+  const {
+    accountingPeriods,
+    loading,
+    getAccountingPeriods,
+    createAccountingPeriod,
+    updateAccountingPeriod,
+    deleteAccountingPeriod,
+  } = useAccountingPeriod();
+
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [editingPeriod, setEditingPeriod] = useState(null);
+
+  useEffect(() => {
+    getAccountingPeriods();
+  }, []);
+
+  const formatDate = (date) => {
+    if (!date) return "";
+    return new Date(date).toLocaleDateString("en-GB");
+  };
 
   const accountingPeriodFields = [
     {
@@ -121,101 +80,132 @@ const AccountingPeriod = () => {
     },
   ];
 
-  const handleSave = (formData) => {
-    console.log("Form Data:", formData);
+  const handleEdit = useCallback((period) => {
+    setEditingPeriod(period);
+    setIsDrawerOpen(true);
+  }, []);
 
-    // API call can go here
-    // Example:
-    // createAccountingPeriod(formData);
+  const handleDelete = useCallback(
+    async (period) => {
+      if (
+        window.confirm(
+          `Are you sure you want to delete accounting period (${formatDate(
+            period.periodFrom
+          )} - ${formatDate(period.periodTo)})?`
+        )
+      ) {
+        try {
+          const res = await deleteAccountingPeriod(period.id);
+          const msg = res?.message || "Accounting period deleted successfully.";
+          showSuccess(msg);
+        } catch (err) {
+          console.error("Failed to delete accounting period:", err);
+          showError(err);
+        }
+      }
+    },
+    [deleteAccountingPeriod, showSuccess, showError]
+  );
 
-    setIsDrawerOpen(false);
+  const handleSave = async (formData) => {
+    try {
+      const fromDate = formData.periodFrom ? new Date(formData.periodFrom).toISOString() : null;
+      const toDate = formData.periodTo ? new Date(formData.periodTo).toISOString() : null;
+
+      if (!fromDate || !toDate) {
+        showError("Please select both Period From and To dates.");
+        return;
+      }
+
+      if (editingPeriod) {
+        const res = await updateAccountingPeriod(editingPeriod.id, {
+          periodFrom: fromDate,
+          periodTo: toDate,
+        });
+        showSuccess(res?.message || "Accounting period updated successfully.");
+      } else {
+        const res = await createAccountingPeriod({
+          periodFrom: fromDate,
+          periodTo: toDate,
+          isActive: true,
+          isClosed: false,
+        });
+        showSuccess(res?.message || "Accounting period created successfully.");
+      }
+      setIsDrawerOpen(false);
+      setEditingPeriod(null);
+    } catch (err) {
+      console.error("Failed to save accounting period:", err);
+      showError(err);
+    }
   };
 
-  const onTabSelect = (event, data) => {
-    setSelectedValue(data.value);
-  };
+  const items = useMemo(() => {
+    return (accountingPeriods || []).map((period, index) => {
+      let status = "-";
+      if (period.isActive) {
+        status = "Active";
+      } else if (period.isClosed) {
+        status = "Completed";
+      }
+
+      return {
+        sNo: index + 1,
+        period: `${formatDate(period.periodFrom)} - ${formatDate(
+          period.periodTo
+        )}`,
+        status,
+        id: period.id,
+        onEdit: () => handleEdit(period),
+        onDelete: () => handleDelete(period),
+      };
+    });
+  }, [accountingPeriods, handleEdit, handleDelete]);
 
   return (
     <div>
-        <BreadCrumbs />
-      <TabList selectedValue={selectedValue} onTabSelect={onTabSelect}>
-        <Tab id="tab1" value="tab1" aria-controls="panel1">
-          Trial Balance
-        </Tab>
-
-        <Tab id="tab2" value="tab2" aria-controls="panel2">
-          Accounting Tab
-        </Tab>
-      </TabList>
+      <BreadCrumbs />
 
       <div className={styles.buttonContainer}>
-         <Button
-        appearance="subtle"
-        icon={<Add20Regular />}
-        onClick={() => setIsDrawerOpen(true)}
-      >
-        Add
-      </Button>
-
-    <AddDrawer
-  open={isDrawerOpen}
-  onClose={() => setIsDrawerOpen(false)}
-  title="Add Accounting Period"
-  fields={accountingPeriodFields}
-  initialValues={{
-    periodFrom: new Date(2026, 3, 2),
-    periodTo: new Date(2027, 3, 1),
-  }}
-  onSubmit={handleSave}
-/>
-        {/* <Button
-          className={styles.addButton}
+        <Button
           appearance="subtle"
-          onClick={() => setIsAddDrawerOpen(true)}
+          icon={<Add20Regular />}
+          onClick={() => {
+            setEditingPeriod(null);
+            setIsDrawerOpen(true);
+          }}
         >
-         <span className={styles.addButtonContent}>
-            <Add20Regular className={styles.addIcon} />
-            Add
-          </span>
+          Add
         </Button>
-        <AddDrawer
-          open={isAddDrawerOpen}
-          onClose={() => setIsAddDrawerOpen(false)}
-        />  */}
       </div>
 
-      <TableComponent 
-        items={items}
-  columns={columns}
+      <AddDrawer
+        open={isDrawerOpen}
+        onClose={() => {
+          setIsDrawerOpen(false);
+          setEditingPeriod(null);
+        }}
+        title={editingPeriod ? "Edit Accounting Period" : "Add Accounting Period"}
+        fields={accountingPeriodFields}
+        initialValues={
+          editingPeriod
+            ? {
+                periodFrom: editingPeriod.periodFrom
+                  ? new Date(editingPeriod.periodFrom)
+                  : null,
+                periodTo: editingPeriod.periodTo
+                  ? new Date(editingPeriod.periodTo)
+                  : null,
+              }
+            : {
+                periodFrom: null,
+                periodTo: null,
+              }
+        }
+        onSubmit={handleSave}
       />
 
-      {/* <div>
-        <div
-          id="panel1"
-          role="tabpanel"
-          aria-labelledby="tab1"
-          hidden={selectedValue !== "tab1"}
-        >
-          Content 1
-        </div>
-
-        <div
-          id="panel2"
-          role="tabpanel"
-          aria-labelledby="tab2"
-          hidden={selectedValue !== "tab2"}
-        >
-          Content 2
-        </div>
-
-     
-      </div>
-   */}
-      {/* <h1>Accounting Period</h1>
-
-      <p>
-        This is the Accounting Period screen.
-      </p> */}
+      <TableComponent items={items} columns={columns} />
     </div>
   );
 };

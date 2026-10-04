@@ -39,6 +39,7 @@ import { useTrialBalance } from "../../../context/TrialBalanceContext/TrialBalan
 import { useChartAccount } from "../../../context/ChartAccountContext/ChartAccountContext";
 
 import { useAccountingPeriod } from "../../../context/AccountingPeriodContext/AccountingPeriodContext";
+import { useToast } from "../../../context/ToastContext/ToastContext";
 import { useEffect } from "react";
 
 import { useLocation } from "react-router-dom";
@@ -293,6 +294,8 @@ const CreateTrialBalance = () => {
   const csvImportMode = location.state?.importMode === "csv";
   const importedCsvRows = location.state?.csvRows || [];
 
+  const { showSuccess, showError } = useToast();
+
   const { getTrialBalanceById, updateTrialBalance } = useTrialBalance();
 
   const { chartAccounts, getChartAccounts } = useChartAccount();
@@ -343,7 +346,7 @@ const CreateTrialBalance = () => {
           return;
         }
 
-        const [trialBalance] = await Promise.all([
+        const [trialBalanceRes, chartAccountsRes] = await Promise.all([
           getTrialBalanceById(trialBalanceId),
           getChartAccounts(),
           getAccountingPeriods(),
@@ -351,16 +354,76 @@ const CreateTrialBalance = () => {
 
         if (!mounted) return;
 
+        const trialBalance = trialBalanceRes?.result || trialBalanceRes;
+        const availableAccounts = chartAccountsRes || [];
+
         setTrialBalanceData(trialBalance);
 
+        const periodIdVal =
+          trialBalance?.period?.id ||
+          trialBalance?.periodId ||
+          trialBalance?.accountingPeriodId ||
+          "";
+
         setFormData({
-          refNo: trialBalance?.refNo || "",
-          journalType: Number(trialBalance?.journalType ?? 0),
-          accountingPeriodId: trialBalance?.accountingPeriodId || "",
+          refNo:
+            trialBalance?.trialBalance?.name ||
+            trialBalance?.trialBalance?.refNo ||
+            trialBalance?.refNo ||
+            "",
+          journalType: Number(
+            trialBalance?.type ??
+            trialBalance?.trialBalanceType ??
+            trialBalance?.journalType ??
+            0
+          ),
+          accountingPeriodId: periodIdVal,
           journalId: trialBalance?.journalId || "",
-          description: trialBalance?.description || "Trial balance",
+          description: trialBalance?.description || "",
           file: null,
         });
+
+        if (
+          trialBalance?.items &&
+          Array.isArray(trialBalance.items) &&
+          trialBalance.items.length > 0
+        ) {
+          const mappedLines = trialBalance.items.map((item, index) => {
+            let accountId = item.account?.id || item.accountId || "";
+            let account = availableAccounts.find((a) => a.id === accountId);
+
+            if (!account && item.account?.code) {
+              account = availableAccounts.find(
+                (a) => String(a.code).trim() === String(item.account.code).trim()
+              );
+              if (account) accountId = account.id;
+            }
+
+            if (!account && item.accountCode) {
+              account = availableAccounts.find(
+                (a) => String(a.code).trim() === String(item.accountCode).trim()
+              );
+              if (account) accountId = account.id;
+            }
+
+            return {
+              lineNo: index + 1,
+              accountId: accountId,
+              debit:
+                item.debit !== undefined && item.debit !== null && item.debit !== 0
+                  ? String(item.debit)
+                  : "",
+              credit:
+                item.credit !== undefined && item.credit !== null && item.credit !== 0
+                  ? String(item.credit)
+                  : "",
+              note: item.note || "",
+              accountNature: getAccountNature(account),
+            };
+          });
+
+          setLines(mappedLines);
+        }
       } catch (error) {
         console.error("Failed to load Trial Balance:", error);
       } finally {
@@ -403,8 +466,21 @@ const CreateTrialBalance = () => {
       return;
     }
 
+    if (lines.length > 0) {
+      setLines((prevLines) =>
+        prevLines.map((line) => {
+          const account = getAccountById(line.accountId);
+          return {
+            ...line,
+            accountNature: getAccountNature(account),
+          };
+        })
+      );
+      return;
+    }
+
     // Manual mode starts with one empty row
-    if (!csvImportMode) {
+    if (!csvImportMode && lines.length === 0) {
       setLines([
         {
           lineNo: 1,
@@ -437,11 +513,23 @@ const CreateTrialBalance = () => {
 
     const nature = account.accountType?.nature ?? account.nature;
 
-    if (nature === 0 || String(nature).toLowerCase() === "debit") {
+    if (
+      nature === 1 ||
+      nature === "1" ||
+      String(nature).toLowerCase() === "debit" ||
+      String(nature).toLowerCase() === "dr"
+    ) {
       return "debit";
     }
 
-    if (nature === 1 || String(nature).toLowerCase() === "credit") {
+    if (
+      nature === 0 ||
+      nature === "0" ||
+      nature === 2 ||
+      nature === "2" ||
+      String(nature).toLowerCase() === "credit" ||
+      String(nature).toLowerCase() === "cr"
+    ) {
       return "credit";
     }
 
@@ -466,7 +554,9 @@ const CreateTrialBalance = () => {
     ? getPeriodLabel(selectedPeriod)
     : trialBalanceData?.accountingPeriod
       ? getPeriodLabel(trialBalanceData.accountingPeriod)
-      : "";
+      : trialBalanceData?.period
+        ? getPeriodLabel(trialBalanceData.period)
+        : "";
 
   /* ---------------------------------------------------------
    * FORM CHANGE
@@ -481,77 +571,75 @@ const CreateTrialBalance = () => {
   /* ---------------------------------------------------------
    * ACCOUNT SELECTION
    * --------------------------------------------------------- */
-const handleAccountChange = (index, accountId) => {
-  const account = getAccountById(accountId);
-  const nature = getAccountNature(account);
+  const handleAccountChange = (index, accountId) => {
+    const account = getAccountById(accountId);
+    const nature = getAccountNature(account);
 
-  setLines((previous) => {
-    const updated = previous.map((line, lineIndex) => {
-      if (lineIndex !== index) return line;
+    setLines((previous) => {
+      const updated = previous.map((line, lineIndex) => {
+        if (lineIndex !== index) return line;
 
-      return {
-        ...line,
-        accountId,
-        accountNature: nature,
-        debit: "",
-        credit: "",
-      };
-    });
+        return {
+          ...line,
+          accountId,
+          accountNature: nature,
+          debit: "",
+          credit: "",
+        };
+      });
 
-    // If this was the last empty row,
-    // create a new empty row.
-    if (index === updated.length - 1 && accountId) {
-      return ensureLastEmptyRow(updated);
-    }
-
-    return updated;
-  });
-
-  setTimeout(() => {
-    if (nature === "debit") {
-      debitRefs.current[index]?.focus();
-    } else if (nature === "credit") {
-      creditRefs.current[index]?.focus();
-    }
-  }, 50);
-};
-
-
-
-
-const handleAmountChange = (index, field, value) => {
-  if (value !== "" && !/^\d*\.?\d*$/.test(value)) {
-    return;
-  }
-
-  setLines((previous) => {
-    const updated = previous.map((line, lineIndex) => {
-      if (lineIndex !== index) {
-        return line;
+      // If this was the last empty row,
+      // create a new empty row.
+      if (index === updated.length - 1 && accountId) {
+        return ensureLastEmptyRow(updated);
       }
 
-      return {
-        ...line,
-        [field]: value,
-
-        ...(field === "debit"
-          ? { credit: "0" }
-          : { debit: "0" }),
-      };
+      return updated;
     });
 
-    // If user entered an amount in the last row,
-    // create a new empty row.
-    if (
-      index === updated.length - 1 &&
-      value !== ""
-    ) {
-      return ensureLastEmptyRow(updated);
+    setTimeout(() => {
+      if (nature === "debit") {
+        debitRefs.current[index]?.focus();
+      } else if (nature === "credit") {
+        creditRefs.current[index]?.focus();
+      }
+    }, 50);
+  };
+
+
+  const handleAmountChange = (index, field, value) => {
+    if (value !== "" && !/^\d*\.?\d*$/.test(value)) {
+      return;
     }
 
-    return updated;
-  });
-};
+    setLines((previous) => {
+      const updated = previous.map((line, lineIndex) => {
+        if (lineIndex !== index) {
+          return line;
+        }
+
+        return {
+          ...line,
+          [field]: value,
+
+          ...(field === "debit"
+            ? { credit: "0" }
+            : { debit: "0" }),
+        };
+      });
+
+      // If user entered an amount in the last row,
+      // create a new empty row.
+      if (
+        index === updated.length - 1 &&
+        value !== ""
+      ) {
+        return ensureLastEmptyRow(updated);
+      }
+
+      return updated;
+    });
+  };
 
 
   /* ---------------------------------------------------------
@@ -571,28 +659,28 @@ const handleAmountChange = (index, field, value) => {
   };
 
   const ensureLastEmptyRow = (lines) => {
-  const lastLine = lines[lines.length - 1];
+    const lastLine = lines[lines.length - 1];
 
-  const lastLineHasValue =
-    lastLine.accountId ||
-    lastLine.debit ||
-    lastLine.credit;
+    const lastLineHasValue =
+      lastLine.accountId ||
+      lastLine.debit ||
+      lastLine.credit;
 
-  if (lastLineHasValue) {
-    return [
-      ...lines,
-      {
-        lineNo: lines.length + 1,
-        accountId: "",
-        debit: "",
-        credit: "",
-        accountNature: null,
-      },
-    ];
-  }
+    if (lastLineHasValue) {
+      return [
+        ...lines,
+        {
+          lineNo: lines.length + 1,
+          accountId: "",
+          debit: "",
+          credit: "",
+          accountNature: null,
+        },
+      ];
+    }
 
-  return lines;
-};
+    return lines;
+  };
 
   const deleteLine = (index) => {
     setLines((previous) => {
@@ -702,22 +790,21 @@ const handleAmountChange = (index, field, value) => {
 
   const handleSave = async () => {
     if (!trialBalanceId) {
-      alert("Trial Balance ID is missing.");
+      showError("Trial Balance ID is missing.");
       return;
     }
 
     if (!formData.accountingPeriodId) {
-      alert("Please select an accounting period.");
+      showError("Please select an accounting period.");
       return;
     }
 
     // Prevent saving an unbalanced trial balance
     if (!isBalanced) {
-      alert(
-        `Amount is not balanced. Debit and Credit must be equal.\n\n` +
-          `Debit: ${formatCurrency(totalDebit)}\n` +
-          `Credit: ${formatCurrency(totalCredit)}\n` +
-          `Difference: ${formatCurrency(balanceAmount)}`,
+      showError(
+        `Amount is not balanced. Debit and Credit must be equal (Debit: ${formatCurrency(
+          totalDebit
+        )}, Credit: ${formatCurrency(totalCredit)}).`
       );
 
       return;
@@ -726,23 +813,44 @@ const handleAmountChange = (index, field, value) => {
     try {
       setSaving(true);
 
+      const mappedItems = lines
+        .filter(
+          (line) =>
+            line.accountId && (parseFloat(line.debit) || parseFloat(line.credit))
+        )
+        .map((line) => {
+          const account = getAccountById(line.accountId);
+          return {
+            accountCode: account?.code || "",
+            accountName: account?.accountName || "",
+            debit: parseFloat(line.debit) || 0,
+            credit: parseFloat(line.credit) || 0,
+            note: line.note || "",
+          };
+        });
+
       const payload = {
+        type: Number(formData.journalType ?? 0),
         journalType: Number(formData.journalType ?? 0),
+        periodId: formData.accountingPeriodId || null,
         accountingPeriodId: formData.accountingPeriodId || null,
         description: formData.description || null,
         turnover,
-        status: 1,
+        totalProfitLoss: profitLossAmount,
+        status: isBalanced ? 1 : 0,
+        items: mappedItems,
       };
 
       console.log("PATCH Trial Balance payload:", payload);
 
-      await updateTrialBalance(trialBalanceId, payload);
+      const res = await updateTrialBalance(trialBalanceId, payload);
+      const message = res?.message || "Trial balance updated successfully.";
 
-      navigate(-1);
+      showSuccess(message);
+      navigate("/trial-balances");
     } catch (error) {
       console.error("Failed to update Trial Balance:", error);
-
-      alert("Failed to save Trial Balance. Please check the API response.");
+      showError(error);
     } finally {
       setSaving(false);
     }
@@ -879,7 +987,7 @@ const handleAmountChange = (index, field, value) => {
             </Button>
           </div>
         )}
-      
+
 
         {/* JOURNAL TABLE */}
         <div className={styles.tableWrapper}>
@@ -967,31 +1075,31 @@ const handleAmountChange = (index, field, value) => {
                   {/* ADD */}
 
                   <TableCell
-  className={`${styles.tableCells} ${styles.addCell}`}
->
-  {index === lines.length - 1 ? (
-    <Button
-      appearance="subtle"
-      icon={<AddRegular />}
-      onClick={addLine}
-      aria-label="Add journal line"
-      title="Add journal line"
-      disabled={
-        !line.accountId &&
-        !line.debit &&
-        !line.credit
-      }
-    />
-  ) : (
-    <Button
-      appearance="subtle"
-      icon={<Delete16Regular />}
-      onClick={() => deleteLine(index)}
-      aria-label="Delete journal line"
-      title="Delete journal line"
-    />
-  )}
-</TableCell>
+                    className={`${styles.tableCells} ${styles.addCell}`}
+                  >
+                    {index === lines.length - 1 ? (
+                      <Button
+                        appearance="subtle"
+                        icon={<AddRegular />}
+                        onClick={addLine}
+                        aria-label="Add journal line"
+                        title="Add journal line"
+                        disabled={
+                          !line.accountId &&
+                          !line.debit &&
+                          !line.credit
+                        }
+                      />
+                    ) : (
+                      <Button
+                        appearance="subtle"
+                        icon={<Delete16Regular />}
+                        onClick={() => deleteLine(index)}
+                        aria-label="Delete journal line"
+                        title="Delete journal line"
+                      />
+                    )}
+                  </TableCell>
                   {/* <TableCell
                     className={`${styles.tableCells} ${styles.addCell}`}
                   >
@@ -1063,7 +1171,7 @@ const handleAmountChange = (index, field, value) => {
             />
           </div>
 
-    
+
 
           <div className={styles.totalRow}>
             <span className={styles.totalLabel}>{profitLossLabel}</span>

@@ -17,7 +17,7 @@ export const BreadCrumbs = () => {
 
   const getLabel = (part) => {
     const labels = {
-      "chart-accounts": "Chart Accounts",
+      "chart-accounts": "Chart of Accounts",
       "accounting-period": "Accounting Period",
       "trial-balances": "Trial Balance",
       journal: "Journal",

@@ -12,16 +12,20 @@ import {
 import {
   TrialBalanceProvider,
 } from "./TrialBalanceContext/TrialBalanceContext";
+import { ToastProvider } from "./ToastContext/ToastContext";
+
 export const AppProvider = ({ children }) => {
   return (
-    <ChartAccountProvider>
-      <AccountTypeProvider>
-        <AccountingPeriodProvider>
-          <TrialBalanceProvider>
-            {children}
-          </TrialBalanceProvider>
-        </AccountingPeriodProvider>
-      </AccountTypeProvider>
-    </ChartAccountProvider>
+    <ToastProvider>
+      <ChartAccountProvider>
+        <AccountTypeProvider>
+          <AccountingPeriodProvider>
+            <TrialBalanceProvider>
+              {children}
+            </TrialBalanceProvider>
+          </AccountingPeriodProvider>
+        </AccountTypeProvider>
+      </ChartAccountProvider>
+    </ToastProvider>
   );
 };

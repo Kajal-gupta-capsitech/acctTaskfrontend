@@ -501,11 +501,11 @@ const chartAccountFields = useMemo(
         </Button>
 
       </div>
-{loading && <p>Loading chart accounts...</p>}
+{loading && <p>Loading chart of accounts...</p>}
 
 {error && (
   <p>
-    Failed to load chart accounts.
+    Failed to load chart of accounts.
   </p>
 )}
 

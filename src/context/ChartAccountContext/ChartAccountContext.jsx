@@ -69,7 +69,7 @@ export const ChartAccountProvider = ({ children }) => {
 
       setChartAccounts(response.data);
     } catch (err) {
-      console.error("Error fetching chart accounts:", err);
+      console.error("Error fetching chart of accounts:", err);
       setError(err);
     } finally {
       setLoading(false);

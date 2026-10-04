@@ -23,6 +23,8 @@ import {
   useAccountingPeriod,
 } from "../../context/AccountingPeriodContext/AccountingPeriodContext";
 
+import { useToast } from "../../context/ToastContext/ToastContext";
+
 
 const useStyles = makeStyles({
   buttonContainer: {
@@ -167,6 +169,7 @@ const TrialBalance = () => {
     error,
     getTrialBalances,
     createTrialBalance,
+    deleteTrialBalance,
   } = useTrialBalance();
 
 
@@ -180,6 +183,9 @@ const TrialBalance = () => {
     accountingPeriods,
     loading: accountingPeriodLoading,
     getAccountingPeriods,
+    createAccountingPeriod,
+    updateAccountingPeriod,
+    deleteAccountingPeriod,
   } = useAccountingPeriod();
 
 
@@ -205,7 +211,7 @@ const TrialBalance = () => {
   }, []);
 
 
-    React.useEffect(() => {
+  React.useEffect(() => {
     if (isDrawerOpen) {
       console.log("Drawer opened, fetching accounting periods...");
       getAccountingPeriods();
@@ -237,6 +243,39 @@ const TrialBalance = () => {
 
     return new Date(date).toLocaleDateString("en-GB");
   };
+
+
+  const { showSuccess, showError } = useToast();
+
+  const handleEditItem = React.useCallback(
+    (item) => {
+      navigate(`/trial-balances/${item.id}/journal`);
+    },
+    [navigate]
+  );
+
+  const handleDeleteItem = React.useCallback(
+    async (item) => {
+      if (
+        window.confirm(
+          `Are you sure you want to delete Trial Balance "${
+            item.refNo || item.id
+          }"?`
+        )
+      ) {
+        try {
+          const res = await deleteTrialBalance(item.id);
+          console.log("Trial Balance:", res);
+          const message = res?.message || "Trial balance deleted successfully.";
+          showSuccess(message);
+        } catch (err) {
+          console.error("Failed to delete trial balance:", err);
+          showError(err);
+        }
+      }
+    },
+    [deleteTrialBalance, showSuccess, showError]
+  );
 
 
   /*
@@ -285,7 +324,7 @@ const TrialBalance = () => {
 
       if (trialBalance.importMode === 0) {
         importType = "CSV";
-      } else if (trialBalance.importMode === 2) {
+      } else if (trialBalance.importMode === 1) {
         importType = "Manual";
       }
 
@@ -330,10 +369,91 @@ const TrialBalance = () => {
 
         id:
           trialBalance.id,
+
+        onEdit: handleEditItem,
+        onDelete: handleDeleteItem,
       };
     });
-  }, [trialBalances]);
+  }, [trialBalances, handleEditItem, handleDeleteItem]);
 
+
+  const [isPeriodDrawerOpen, setIsPeriodDrawerOpen] = React.useState(false);
+  const [editingPeriod, setEditingPeriod] = React.useState(null);
+
+  const accountingPeriodFields = [
+    {
+      name: "periodFrom",
+      label: "Period From",
+      type: "date",
+      required: true,
+    },
+    {
+      name: "periodTo",
+      label: "To",
+      type: "date",
+      required: true,
+    },
+  ];
+
+  const handleEditPeriod = React.useCallback((period) => {
+    setEditingPeriod(period);
+    setIsPeriodDrawerOpen(true);
+  }, []);
+
+  const handleDeletePeriod = React.useCallback(
+    async (period) => {
+      if (
+        window.confirm(
+          `Are you sure you want to delete accounting period (${formatDate(
+            period.periodFrom
+          )} - ${formatDate(period.periodTo)})?`
+        )
+      ) {
+        try {
+          const res = await deleteAccountingPeriod(period.id);
+          const msg = res?.message || "Accounting period deleted successfully.";
+          showSuccess(msg);
+        } catch (err) {
+          console.error("Failed to delete accounting period:", err);
+          showError(err);
+        }
+      }
+    },
+    [deleteAccountingPeriod, showSuccess, showError]
+  );
+
+  const handleAccountingPeriodSubmit = async (data) => {
+    try {
+      const fromDate = data.periodFrom ? new Date(data.periodFrom).toISOString() : null;
+      const toDate = data.periodTo ? new Date(data.periodTo).toISOString() : null;
+
+      if (!fromDate || !toDate) {
+        showError("Please select both Period From and To dates.");
+        return;
+      }
+
+      if (editingPeriod) {
+        const res = await updateAccountingPeriod(editingPeriod.id, {
+          periodFrom: fromDate,
+          periodTo: toDate,
+        });
+        showSuccess(res?.message || "Accounting period updated successfully.");
+      } else {
+        const res = await createAccountingPeriod({
+          periodFrom: fromDate,
+          periodTo: toDate,
+          isActive: true,
+          isClosed: false,
+        });
+        showSuccess(res?.message || "Accounting period created successfully.");
+      }
+      setIsPeriodDrawerOpen(false);
+      setEditingPeriod(null);
+    } catch (err) {
+      console.error("Failed to save accounting period:", err);
+      showError(err);
+    }
+  };
 
   /*
   |--------------------------------------------------------------------------
@@ -364,9 +484,11 @@ const TrialBalance = () => {
         status,
 
         id: period.id,
+        onEdit: () => handleEditPeriod(period),
+        onDelete: () => handleDeletePeriod(period),
       };
     });
-  }, [accountingPeriods]);
+  }, [accountingPeriods, handleEditPeriod, handleDeletePeriod]);
 
 
   /*
@@ -375,246 +497,246 @@ const TrialBalance = () => {
   |--------------------------------------------------------------------------
   */
 
-const downloadCsvTemplate = () => {
-  const csvContent =
-    '"Account Code","Account Name","Debit","Credit"\n';
+  const downloadCsvTemplate = () => {
+    const csvContent =
+      '"Account Code","Account Name","Debit","Credit"\n';
 
-  const blob = new Blob([csvContent], {
-    type: "text/csv;charset=utf-8;",
-  });
+    const blob = new Blob([csvContent], {
+      type: "text/csv;charset=utf-8;",
+    });
 
-  const url = URL.createObjectURL(blob);
+    const url = URL.createObjectURL(blob);
 
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = "trial-balance-template.csv";
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "trial-balance-template.csv";
 
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 
-  URL.revokeObjectURL(url);
-};
+    URL.revokeObjectURL(url);
+  };
 
 
   const trialBalanceFields = [
-  /*
-  |--------------------------------------------------------------------------
-  | Type
-  |--------------------------------------------------------------------------
-  */
+    /*
+    |--------------------------------------------------------------------------
+    | Type
+    |--------------------------------------------------------------------------
+    */
 
-  {
-    name: "trialBalanceType",
+    {
+      name: "trialBalanceType",
 
-    label: "Type",
+      label: "Type",
 
-    type: "radio",
+      type: "radio",
 
-    required: true,
+      required: true,
 
-    options: [
-      {
+      options: [
+        {
+          value: "statutory",
+          label: "Statutory",
+        },
+        {
+          value: "management",
+          label: "Management",
+        },
+      ],
+
+      // When Type changes, clear fields
+      // belonging to the previous type.
+      clearFieldsOnChange: [
+        "accountingPeriodId",
+        "periodFrom",
+        "periodTo",
+      ],
+    },
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Statutory -> Accounting Period
+    |--------------------------------------------------------------------------
+    */
+
+    {
+      name: "accountingPeriodId",
+
+      label: "Period",
+
+      type: "select",
+
+      required: true,
+
+      showWhen: {
+        field: "trialBalanceType",
         value: "statutory",
-        label: "Statutory",
       },
-      {
+
+      placeholder: accountingPeriodLoading
+        ? "Loading periods..."
+        : "Select period",
+
+      options: accountingPeriods.map(
+        (period) => ({
+          value: period.id,
+
+          label: `${formatDate(
+            period.periodFrom
+          )} - ${formatDate(
+            period.periodTo
+          )}`,
+        })
+      ),
+    },
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Management -> From
+    |--------------------------------------------------------------------------
+    */
+
+    {
+      name: "periodFrom",
+
+      label: "From",
+
+      type: "date",
+
+      required: true,
+
+      showWhen: {
+        field: "trialBalanceType",
         value: "management",
-        label: "Management",
       },
-    ],
 
-    // When Type changes, clear fields
-    // belonging to the previous type.
-    clearFieldsOnChange: [
-      "accountingPeriodId",
-      "periodFrom",
-      "periodTo",
-    ],
-  },
-
-
-  /*
-  |--------------------------------------------------------------------------
-  | Statutory -> Accounting Period
-  |--------------------------------------------------------------------------
-  */
-
-  {
-    name: "accountingPeriodId",
-
-    label: "Period",
-
-    type: "select",
-
-    required: true,
-
-    showWhen: {
-      field: "trialBalanceType",
-      value: "statutory",
+      placeholder: "Select from date",
     },
 
-    placeholder: accountingPeriodLoading
-      ? "Loading periods..."
-      : "Select period",
 
-    options: accountingPeriods.map(
-      (period) => ({
-        value: period.id,
+    /*
+    |--------------------------------------------------------------------------
+    | Management -> To
+    |--------------------------------------------------------------------------
+    */
 
-        label: `${formatDate(
-          period.periodFrom
-        )} - ${formatDate(
-          period.periodTo
-        )}`,
-      })
-    ),
-  },
+    {
+      name: "periodTo",
 
+      label: "To",
 
-  /*
-  |--------------------------------------------------------------------------
-  | Management -> From
-  |--------------------------------------------------------------------------
-  */
+      type: "date",
 
-  {
-    name: "periodFrom",
+      required: true,
 
-    label: "From",
+      showWhen: {
+        field: "trialBalanceType",
+        value: "management",
+      },
 
-    type: "date",
-
-    required: true,
-
-    showWhen: {
-      field: "trialBalanceType",
-      value: "management",
+      placeholder: "Select to date",
     },
 
-    placeholder: "Select from date",
-  },
 
+    /*
+    |--------------------------------------------------------------------------
+    | Import Mode
+    |--------------------------------------------------------------------------
+    */
 
-  /*
-  |--------------------------------------------------------------------------
-  | Management -> To
-  |--------------------------------------------------------------------------
-  */
+    {
+      name: "importMode",
 
-  {
-    name: "periodTo",
+      label: "Mode of Import",
 
-    label: "To",
+      type: "radio",
 
-    type: "date",
+      required: true,
 
-    required: true,
+      options: [
+        {
+          value: "csv",
+          label: "CSV",
+        },
+        {
+          value: "manual",
+          label: "Manual",
+        },
+      ],
 
-    showWhen: {
-      field: "trialBalanceType",
-      value: "management",
+      // If user changes CSV -> Manual,
+      // clear the selected CSV file.
+      clearFieldsOnChange: [
+        "file",
+      ],
     },
 
-    placeholder: "Select to date",
-  },
 
+    /*
+    |--------------------------------------------------------------------------
+    | Import Format
+    |--------------------------------------------------------------------------
+    */
 
-  /*
-  |--------------------------------------------------------------------------
-  | Import Mode
-  |--------------------------------------------------------------------------
-  */
+    {
+      name: "importFormat",
 
-  {
-    name: "importMode",
+      label: "Import Format",
 
-    label: "Mode of Import",
+      type: "select",
 
-    type: "radio",
-
-    required: true,
-
-    options: [
-      {
+      options: [
+        {
+          value: "default",
+          label: "Default",
+        },
+      ],
+      showWhen: {
+        field: "importMode",
         value: "csv",
-        label: "CSV",
       },
-      {
-        value: "manual",
-        label: "Manual",
-      },
-    ],
-
-    // If user changes CSV -> Manual,
-    // clear the selected CSV file.
-    clearFieldsOnChange: [
-      "file",
-    ],
-  },
-
-
-  /*
-  |--------------------------------------------------------------------------
-  | Import Format
-  |--------------------------------------------------------------------------
-  */
-
-  {
-    name: "importFormat",
-
-    label: "Import Format",
-
-    type: "select",
-     
-    options: [
-      {
-        value: "default",
-        label: "Default",
-      },
-    ],
-    showWhen: {
-      field: "importMode",
-      value: "csv",
     },
-  },
 
 
-  /*
-  |--------------------------------------------------------------------------
-  | CSV File
-  |--------------------------------------------------------------------------
-  */
+    /*
+    |--------------------------------------------------------------------------
+    | CSV File
+    |--------------------------------------------------------------------------
+    */
 
 
 
-  {
-    name: "file",
+    {
+      name: "file",
 
-    label: "CSV File",
+      label: "CSV File",
 
-    type: "file",
+      type: "file",
 
-    accept: ".csv",
+      accept: ".csv",
 
-    // ONLY visible when CSV is selected.
-    showWhen: {
-      field: "importMode",
-      value: "csv",
+      // ONLY visible when CSV is selected.
+      showWhen: {
+        field: "importMode",
+        value: "csv",
+      },
     },
-  },
-  {
-  name: "csvTemplate",
-  label: "",
-  type: "link",
-  buttonLabel: "Download CSV Template",
-  onClick: downloadCsvTemplate,
-  showWhen: {
-    field: "importMode",
-    value: "csv",
-  },
-},
-];
+    {
+      name: "csvTemplate",
+      label: "",
+      type: "link",
+      buttonLabel: "Download CSV Template",
+      onClick: downloadCsvTemplate,
+      showWhen: {
+        field: "importMode",
+        value: "csv",
+      },
+    },
+  ];
 
 
 
@@ -645,199 +767,204 @@ const downloadCsvTemplate = () => {
 
 
   const parseCsv = (text) => {
-  const lines = text
-    .split(/\r?\n/)
-    .filter((line) => line.trim() !== "");
+    const lines = text
+      .split(/\r?\n/)
+      .filter((line) => line.trim() !== "");
 
-  if (lines.length < 2) {
-    return [];
-  }
-
-  const parseRow = (row) => {
-    const values = [];
-    let current = "";
-    let insideQuotes = false;
-
-    for (let i = 0; i < row.length; i++) {
-      const char = row[i];
-
-      if (char === '"') {
-        insideQuotes = !insideQuotes;
-      } else if (char === "," && !insideQuotes) {
-        values.push(current.trim());
-        current = "";
-      } else {
-        current += char;
-      }
+    if (lines.length < 2) {
+      return [];
     }
 
-    values.push(current.trim());
-    console.log("Parsed CSV Row:", values);
-    return values;
-  };
+    const parseRow = (row) => {
+      const values = [];
+      let current = "";
+      let insideQuotes = false;
 
-  const headers = parseRow(lines[0]).map((header) =>
-    header.replace(/^"|"$/g, "").trim()
-  );
+      for (let i = 0; i < row.length; i++) {
+        const char = row[i];
 
-  return lines.slice(1).map((line) => {
-    const values = parseRow(line);
+        if (char === '"') {
+          insideQuotes = !insideQuotes;
+        } else if (char === "," && !insideQuotes) {
+          values.push(current.trim());
+          current = "";
+        } else {
+          current += char;
+        }
+      }
 
-    const row = {};
-
-    headers.forEach((header, index) => {
-      row[header] = (values[index] || "")
-        .replace(/^"|"$/g, "")
-        .trim();
-    });
-
-    return {
-      accountCode: row["Account Code"] || "",
-      accountName: row["Account Name"] || "",
-      debit: row["Debit"] || "",
-      credit: row["Credit"] || "",
+      values.push(current.trim());
+      console.log("Parsed CSV Row:", values);
+      return values;
     };
-  });
+
+    const headers = parseRow(lines[0]).map((header) =>
+      header.replace(/^"|"$/g, "").trim()
+    );
+
+    return lines.slice(1).map((line) => {
+      const values = parseRow(line);
+
+      const row = {};
+
+      headers.forEach((header, index) => {
+        row[header] = (values[index] || "")
+          .replace(/^"|"$/g, "")
+          .trim();
+      });
+
+      return {
+        accountCode: row["Account Code"] || "",
+        accountName: row["Account Name"] || "",
+        debit: row["Debit"] || "",
+        credit: row["Credit"] || "",
+      };
+    });
   };
 
   const handleSubmit = async (data) => {
-  try {
-    console.log("handleSubmit Data:", data);
+    try {
+      console.log("handleSubmit Data:", data);
 
-    let csvRows = [];
+      let csvRows = [];
 
-    if (data.importMode === "csv" && data.file) {
-      const csvText = await data.file.text();
+      if (data.importMode === "csv" && data.file) {
+        const csvText = await data.file.text();
 
-      csvRows = parseCsv(csvText);
+        csvRows = parseCsv(csvText);
 
-      console.log("Parsed CSV Rows:", csvRows);
+        console.log("Parsed CSV Rows:", csvRows);
 
-      if (csvRows.length === 0) {
-        throw new Error(
-          "CSV file is empty or does not contain valid data."
+        if (csvRows.length === 0) {
+          throw new Error(
+            "CSV file is empty or does not contain valid data."
+          );
+        }
+      }
+
+      const payload = new FormData();
+
+
+      payload.append(
+        "trialBalanceType",
+        data.trialBalanceType === "statutory"
+          ? "0"
+          : "1"
+      );
+
+      /*
+       * Accounting Period
+       */
+      if (data.accountingPeriodId) {
+        payload.append(
+          "accountingPeriodId",
+          data.accountingPeriodId
         );
       }
-    }
 
-    const payload = new FormData();
+      /*
+       * Chart Account
+       */
+      if (data.chartAccountId) {
+        payload.append(
+          "chartAccountId",
+          data.chartAccountId
+        );
+      }
 
- 
-    payload.append(
-      "trialBalanceType",
-      data.trialBalanceType === "statutory"
-        ? "0"
-        : "1"
-    );
-
-    /*
-     * Accounting Period
-     */
-    if (data.accountingPeriodId) {
       payload.append(
-        "accountingPeriodId",
-        data.accountingPeriodId
+        "importMode",
+        data.importMode === "csv"
+          ? "0"
+          : "1"
       );
-    }
 
-    /*
-     * Chart Account
-     */
-    if (data.chartAccountId) {
-      payload.append(
-        "chartAccountId",
-        data.chartAccountId
-      );
-    }
+      /*
+       * Import Format
+       */
+      if (data.importFormat) {
+        payload.append(
+          "importFormat",
+          data.importFormat
+        );
+      }
 
-    payload.append(
-      "importMode",
-      data.importMode === "csv"
-        ? "0"
-        : "2"
-    );
+      if (
+        data.importMode === "csv" &&
+        data.file
+      ) {
+        payload.append(
+          "csvFile",
+          data.file,
+          data.file.name
+        );
+        payload.append(
+          "file",
+          data.file,
+          data.file.name
+        );
+      }
 
-    /*
-     * Import Format
-     */
-    if (data.importFormat) {
-      payload.append(
-        "importFormat",
-        data.importFormat
-      );
-    }
+      console.log("Trial Balance FormData:");
 
-    if (
-      data.importMode === "csv" &&
-      data.file
-    ) {
-      payload.append(
-        "file",
-        data.file,
-        data.file.name
-      );
-    }
-
-    console.log("Trial Balance FormData:");
-
-    for (const [key, value] of payload.entries()) {
-      console.log(
-        key,
-        value instanceof File
-          ? {
+      for (const [key, value] of payload.entries()) {
+        console.log(
+          key,
+          value instanceof File
+            ? {
               name: value.name,
               size: value.size,
               type: value.type,
             }
-          : value
-      );
-    }
-
-    const createdTrialBalance =
-      await createTrialBalance(payload);
-
-    console.log(
-      "Created Trial Balance:",
-      createdTrialBalance
-    );
-
-
-    const trialBalanceId =
-      createdTrialBalance?.id;
-
-    if (!trialBalanceId) {
-      throw new Error(
-        "Trial Balance ID was not returned by the API."
-      );
-    }
-
-    setIsDrawerOpen(false);
-
-    navigate(
-      `/trial-balances/${trialBalanceId}/journal`,
-      {
-        state: {
-          trialBalanceData:
-            createdTrialBalance,
-          importMode: data.importMode,
-          csvRows:
-            data.importMode === "csv"
-              ? csvRows
-              : [],
-        },
+            : value
+        );
       }
-    );
 
-  } catch (err) {
-    console.error(
-      "Failed to create trial balance:",
-      err
-    );
+      const createdRes =
+        await createTrialBalance(payload);
 
-    alert(
-      "Failed to create trial balance. Please check the data."
-    );
-  }
+      const successMessage =
+        createdRes?.message || "Trial balance created successfully.";
+
+      showSuccess(successMessage);
+
+      const createdTrialBalance =
+        createdRes?.result || createdRes;
+
+      const trialBalanceId =
+        createdTrialBalance?.id;
+
+      if (!trialBalanceId) {
+        throw new Error(
+          "Trial Balance ID was not returned by the API."
+        );
+      }
+
+      setIsDrawerOpen(false);
+
+      navigate(
+        `/trial-balances/${trialBalanceId}/journal`,
+        {
+          state: {
+            trialBalanceData:
+              createdTrialBalance,
+            importMode: data.importMode,
+            csvRows:
+              data.importMode === "csv"
+                ? csvRows
+                : [],
+          },
+        }
+      );
+
+    } catch (err) {
+      console.error(
+        "Failed to create trial balance:",
+        err
+      );
+
+      showError(err);
+    }
   };
 
   if (loading) {
@@ -941,11 +1068,11 @@ const downloadCsvTemplate = () => {
             <Button
               appearance="subtle"
               icon={<Add20Regular />}
-              onClick={() =>{
+              onClick={() => {
                 console.log("Add Trial Balance clicked");
-                  setIsDrawerOpen(true)
+                setIsDrawerOpen(true)
               }
-              
+
               }
             >
               Trial Balance
@@ -1004,9 +1131,43 @@ const downloadCsvTemplate = () => {
             <Button
               appearance="subtle"
               icon={<Add20Regular />}
+              onClick={() => {
+                setEditingPeriod(null);
+                setIsPeriodDrawerOpen(true);
+              }}
             >
               Add
             </Button>
+
+            <AddDrawer
+              open={isPeriodDrawerOpen}
+              onClose={() => {
+                setIsPeriodDrawerOpen(false);
+                setEditingPeriod(null);
+              }}
+              title={
+                editingPeriod
+                  ? "Edit Accounting Period"
+                  : "Add Accounting Period"
+              }
+              fields={accountingPeriodFields}
+              initialValues={
+                editingPeriod
+                  ? {
+                      periodFrom: editingPeriod.periodFrom
+                        ? new Date(editingPeriod.periodFrom)
+                        : null,
+                      periodTo: editingPeriod.periodTo
+                        ? new Date(editingPeriod.periodTo)
+                        : null,
+                    }
+                  : {
+                      periodFrom: null,
+                      periodTo: null,
+                    }
+              }
+              onSubmit={handleAccountingPeriodSubmit}
+            />
 
           </div>
 

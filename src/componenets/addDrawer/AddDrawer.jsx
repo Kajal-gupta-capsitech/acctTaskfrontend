@@ -207,6 +207,17 @@ const AddDrawer = ({
 
 
     if (field.type === "date") {
+      let dateValue = undefined;
+      const rawVal = formData[field.name];
+
+      if (rawVal instanceof Date && !isNaN(rawVal.getTime())) {
+        dateValue = rawVal;
+      } else if (rawVal && typeof rawVal === "string") {
+        const parsed = new Date(rawVal);
+        if (!isNaN(parsed.getTime())) {
+          dateValue = parsed;
+        }
+      }
 
       return (
         <DatePicker
@@ -215,10 +226,7 @@ const AddDrawer = ({
             field.placeholder ||
             "Select a date..."
           }
-          value={
-            formData[field.name] ||
-            undefined
-          }
+          value={dateValue}
           onSelectDate={(date) => {
             handleChange(
               field.name,

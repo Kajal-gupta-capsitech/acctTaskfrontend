@@ -122,7 +122,7 @@ const Navbar = () => {
               icon={<DashboardIcon />}
               onClick={() => navigate("/chart-accounts")}
             >
-              Chart Accounts
+              Chart of Accounts
             </NavItem>
 
             <NavItem
@@ -162,7 +162,7 @@ const Navbar = () => {
           <div className={styles.collapsedItems}>
 
             <Tooltip
-              content="Chart Accounts"
+              content="Chart of Accounts"
               relationship="label"
             >
               <button

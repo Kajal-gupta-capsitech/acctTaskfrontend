@@ -3,7 +3,6 @@ import * as React from "react";
 import {
   EditRegular,
   DeleteRegular,
-  MoreHorizontalRegular,
 } from "@fluentui/react-icons";
 
 import {
@@ -115,7 +114,7 @@ const useStyles = makeStyles({
 //   },
 // ];
 
-export const TableComponent = ({ items = [], columns = [] }) => {
+export const TableComponent = ({ items = [], columns = [], onEdit, onDelete }) => {
   const styles = useStyles();
 
   return (
@@ -166,8 +165,17 @@ export const TableComponent = ({ items = [], columns = [] }) => {
                   appearance="subtle"
                   icon={<EditRegular />}
                   aria-label={`Edit ${
-                    item.accountName ?? item.refNo
+                    item.accountName ?? item.refNo ?? "item"
                   }`}
+                  onClick={() => {
+                    if (item.onEdit) {
+                      item.onEdit(item);
+                    } else if (column.onEdit) {
+                      column.onEdit(item);
+                    } else if (onEdit) {
+                      onEdit(item);
+                    }
+                  }}
                 />
 
                 <Button
@@ -175,17 +183,17 @@ export const TableComponent = ({ items = [], columns = [] }) => {
                   appearance="subtle"
                   icon={<DeleteRegular />}
                   aria-label={`Delete ${
-                    item.accountName ?? item.refNo
+                    item.accountName ?? item.refNo ?? "item"
                   }`}
-                />
-
-                <Button
-                  className={styles.actionButton}
-                  appearance="subtle"
-                  icon={<MoreHorizontalRegular />}
-                  aria-label={`More actions for ${
-                    item.accountName ?? item.refNo
-                  }`}
+                  onClick={() => {
+                    if (item.onDelete) {
+                      item.onDelete(item);
+                    } else if (column.onDelete) {
+                      column.onDelete(item);
+                    } else if (onDelete) {
+                      onDelete(item);
+                    }
+                  }}
                 />
 
               </div>

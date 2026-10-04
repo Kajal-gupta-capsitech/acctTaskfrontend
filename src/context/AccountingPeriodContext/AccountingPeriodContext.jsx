@@ -13,6 +13,9 @@ export const AccountingPeriodProvider = ({ children }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  // ==========================================
+  // GET ALL
+  // ==========================================
   const getAccountingPeriods = async () => {
     try {
       setLoading(true);
@@ -20,16 +23,89 @@ export const AccountingPeriodProvider = ({ children }) => {
 
       const response = await api.get("/AccountingPeriods");
 
-      setAccountingPeriods(response.data);
+      const data = response.data?.result || response.data || [];
+      setAccountingPeriods(data);
+      return data;
     } catch (err) {
-      console.error(
-        "Error fetching accounting periods:",
-        err
-      );
-
+      console.error("Error fetching accounting periods:", err);
       setError(err);
+      throw err;
     } finally {
       setLoading(false);
+    }
+  };
+
+  // ==========================================
+  // GET BY ID
+  // ==========================================
+  const getAccountingPeriodById = async (id) => {
+    try {
+      setError(null);
+
+      const response = await api.get(`/AccountingPeriods/${id}`);
+
+      return response.data;
+    } catch (err) {
+      console.error("Error fetching accounting period:", err);
+      setError(err);
+      throw err;
+    }
+  };
+
+  // ==========================================
+  // CREATE
+  // ==========================================
+  const createAccountingPeriod = async (periodData) => {
+    try {
+      setError(null);
+
+      const response = await api.post("/AccountingPeriods", periodData);
+
+      await getAccountingPeriods();
+
+      return response.data;
+    } catch (err) {
+      console.error("Error creating accounting period:", err);
+      setError(err);
+      throw err;
+    }
+  };
+
+  // ==========================================
+  // UPDATE / PATCH
+  // ==========================================
+  const updateAccountingPeriod = async (id, periodData) => {
+    try {
+      setError(null);
+
+      const response = await api.patch(`/AccountingPeriods/${id}`, periodData);
+
+      await getAccountingPeriods();
+
+      return response.data;
+    } catch (err) {
+      console.error("Error updating accounting period:", err);
+      setError(err);
+      throw err;
+    }
+  };
+
+  // ==========================================
+  // DELETE
+  // ==========================================
+  const deleteAccountingPeriod = async (id) => {
+    try {
+      setError(null);
+
+      const response = await api.delete(`/AccountingPeriods/${id}`);
+
+      await getAccountingPeriods();
+
+      return response.data;
+    } catch (err) {
+      console.error("Error deleting accounting period:", err);
+      setError(err);
+      throw err;
     }
   };
 
@@ -40,6 +116,10 @@ export const AccountingPeriodProvider = ({ children }) => {
         loading,
         error,
         getAccountingPeriods,
+        getAccountingPeriodById,
+        createAccountingPeriod,
+        updateAccountingPeriod,
+        deleteAccountingPeriod,
       }}
     >
       {children}
