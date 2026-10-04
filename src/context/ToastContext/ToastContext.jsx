@@ -35,7 +35,7 @@ export const ToastProvider = ({ children }) => {
             position: "fixed",
             top: "24px",
             right: "24px",
-            zIndex: 99999,
+            zIndex: 2147483647,
             backgroundColor:
               toast.type === "success"
                 ? "#107c10"

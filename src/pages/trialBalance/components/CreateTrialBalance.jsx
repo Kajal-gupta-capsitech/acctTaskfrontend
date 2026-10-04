@@ -3,6 +3,7 @@ import * as React from "react";
 import {
   Button,
   Dropdown,
+  Combobox,
   Option,
   Input,
   Textarea,
@@ -309,6 +310,10 @@ const CreateTrialBalance = () => {
   const [trialBalanceData, setTrialBalanceData] = React.useState(null);
   const [loading, setLoading] = React.useState(true);
   const [saving, setSaving] = React.useState(false);
+  const [importing, setImporting] = React.useState(false);
+  const [importCompleted, setImportCompleted] = React.useState(false);
+
+  const isReadOnlyCsvMode = csvImportMode && !importCompleted;
 
   const [formData, setFormData] = React.useState({
     refNo: "",
@@ -406,9 +411,14 @@ const CreateTrialBalance = () => {
               if (account) accountId = account.id;
             }
 
+            const codeVal = account?.code || item.account?.code || item.accountCode || "";
+            const nameVal = account?.accountName || item.account?.name || item.accountName || codeVal || "";
+
             return {
               lineNo: index + 1,
               accountId: accountId,
+              accountCode: codeVal,
+              accountName: nameVal,
               debit:
                 item.debit !== undefined && item.debit !== null && item.debit !== 0
                   ? String(item.debit)
@@ -447,15 +457,19 @@ const CreateTrialBalance = () => {
       const mappedLines = importedCsvRows.map((row, index) => {
         const account = (chartAccounts || []).find(
           (item) =>
-            String(item.code || "").trim() ===
-            String(row.accountCode || "").trim(),
+            String(item.code || "").trim() === String(row.accountCode || "").trim() ||
+            String(item.accountName || "").trim().toLowerCase() === String(row.accountName || "").trim().toLowerCase()
         );
 
         const accountNature = getAccountNature(account);
+        const codeVal = account?.code || row.accountCode || "";
+        const nameVal = account?.accountName || row.accountName || (row.accountCode ? `Account ${row.accountCode}` : "");
 
         return {
           lineNo: index + 1,
           accountId: account?.id || "",
+          accountCode: codeVal,
+          accountName: nameVal,
           debit: row.debit || "",
           credit: row.credit || "",
           accountNature,
@@ -472,7 +486,9 @@ const CreateTrialBalance = () => {
           const account = getAccountById(line.accountId);
           return {
             ...line,
-            accountNature: getAccountNature(account),
+            accountCode: line.accountCode || account?.code || "",
+            accountName: line.accountName || account?.accountName || "",
+            accountNature: getAccountNature(account) || line.accountNature,
           };
         })
       );
@@ -485,6 +501,8 @@ const CreateTrialBalance = () => {
         {
           lineNo: 1,
           accountId: "",
+          accountCode: "",
+          accountName: "",
           debit: "",
           credit: "",
           accountNature: null,
@@ -571,6 +589,9 @@ const CreateTrialBalance = () => {
   /* ---------------------------------------------------------
    * ACCOUNT SELECTION
    * --------------------------------------------------------- */
+  /* ---------------------------------------------------------
+   * ACCOUNT SELECTION & NAME EDIT
+   * --------------------------------------------------------- */
   const handleAccountChange = (index, accountId) => {
     const account = getAccountById(accountId);
     const nature = getAccountNature(account);
@@ -581,10 +602,10 @@ const CreateTrialBalance = () => {
 
         return {
           ...line,
-          accountId,
+          accountId: accountId || "",
+          accountCode: account?.code || "",
+          accountName: account?.accountName || "",
           accountNature: nature,
-          debit: "",
-          credit: "",
         };
       });
 
@@ -604,6 +625,36 @@ const CreateTrialBalance = () => {
         creditRefs.current[index]?.focus();
       }
     }, 50);
+  };
+
+  const handleAccountNameChange = (index, value) => {
+    const matchingAccount = (chartAccounts || []).find(
+      (a) =>
+        String(a.accountName || "").toLowerCase() === value.toLowerCase() ||
+        String(a.code || "").toLowerCase() === value.toLowerCase()
+    );
+
+    const nature = getAccountNature(matchingAccount);
+
+    setLines((previous) => {
+      const updated = previous.map((line, lineIndex) => {
+        if (lineIndex !== index) return line;
+
+        return {
+          ...line,
+          accountId: matchingAccount?.id || line.accountId || "",
+          accountCode: matchingAccount?.code || line.accountCode || "",
+          accountName: value,
+          accountNature: nature || line.accountNature,
+        };
+      });
+
+      if (index === updated.length - 1 && value.trim() !== "") {
+        return ensureLastEmptyRow(updated);
+      }
+
+      return updated;
+    });
   };
 
 
@@ -651,6 +702,8 @@ const CreateTrialBalance = () => {
       {
         lineNo: previous.length + 1,
         accountId: "",
+        accountCode: "",
+        accountName: "",
         debit: "",
         credit: "",
         accountNature: null,
@@ -659,10 +712,13 @@ const CreateTrialBalance = () => {
   };
 
   const ensureLastEmptyRow = (lines) => {
+    if (!lines || lines.length === 0) return lines;
     const lastLine = lines[lines.length - 1];
 
     const lastLineHasValue =
       lastLine.accountId ||
+      lastLine.accountName ||
+      lastLine.accountCode ||
       lastLine.debit ||
       lastLine.credit;
 
@@ -672,6 +728,8 @@ const CreateTrialBalance = () => {
         {
           lineNo: lines.length + 1,
           accountId: "",
+          accountCode: "",
+          accountName: "",
           debit: "",
           credit: "",
           accountNature: null,
@@ -788,6 +846,53 @@ const CreateTrialBalance = () => {
   //   }
   // };
 
+  const handleImportCsv = async () => {
+    try {
+      setImporting(true);
+
+      const mappedItems = lines
+        .filter(
+          (line) =>
+            (line.accountId || line.accountName || line.accountCode) &&
+            (parseFloat(line.debit) || parseFloat(line.credit))
+        )
+        .map((line) => {
+          const account = getAccountById(line.accountId);
+          return {
+            accountCode: line.accountCode || account?.code || "",
+            accountName: line.accountName || account?.accountName || "",
+            debit: parseFloat(line.debit) || 0,
+            credit: parseFloat(line.credit) || 0,
+            note: line.note || "",
+          };
+        });
+
+      if (trialBalanceId) {
+        const payload = {
+          type: Number(formData.journalType ?? 0),
+          journalType: Number(formData.journalType ?? 0),
+          periodId: formData.accountingPeriodId || null,
+          accountingPeriodId: formData.accountingPeriodId || null,
+          description: formData.description || null,
+          turnover,
+          totalProfitLoss: profitLossAmount,
+          status: isBalanced ? 1 : 0,
+          items: mappedItems,
+        };
+
+        await updateTrialBalance(trialBalanceId, payload);
+      }
+
+      showSuccess("CSV imported successfully.");
+      setImportCompleted(true);
+    } catch (err) {
+      console.error("Failed to import CSV:", err);
+      showError(err);
+    } finally {
+      setImporting(false);
+    }
+  };
+
   const handleSave = async () => {
     if (!trialBalanceId) {
       showError("Trial Balance ID is missing.");
@@ -816,13 +921,14 @@ const CreateTrialBalance = () => {
       const mappedItems = lines
         .filter(
           (line) =>
-            line.accountId && (parseFloat(line.debit) || parseFloat(line.credit))
+            (line.accountId || line.accountName || line.accountCode) &&
+            (parseFloat(line.debit) || parseFloat(line.credit))
         )
         .map((line) => {
           const account = getAccountById(line.accountId);
           return {
-            accountCode: account?.code || "",
-            accountName: account?.accountName || "",
+            accountCode: line.accountCode || account?.code || "",
+            accountName: line.accountName || account?.accountName || "",
             debit: parseFloat(line.debit) || 0,
             credit: parseFloat(line.credit) || 0,
             note: line.note || "",
@@ -975,251 +1081,242 @@ const CreateTrialBalance = () => {
           </Field>
         </div>
 
-        {/* ACCOUNT BUTTON */}
-        {!csvImportMode && (
-          <div className={styles.accountButtonContainer}>
-            <Button
-              className={styles.accountButton}
-              icon={<AddRegular />}
-              onClick={addLine}
-            >
-              Account
-            </Button>
-          </div>
-        )}
-
-
-        {/* JOURNAL TABLE */}
-        <div className={styles.tableWrapper}>
-          <Table className={styles.table}>
-            <TableHeader>
-              <TableRow>
-                <TableHeaderCell className={styles.headerCell}>
-                  Line no
-                </TableHeaderCell>
-                <TableHeaderCell className={styles.headerCell}>
-                  Account
-                </TableHeaderCell>
-                <TableHeaderCell className={styles.headerCell}>
-                  Debit (£)
-                </TableHeaderCell>
-                <TableHeaderCell className={styles.headerCell}>
-                  Credit (£)
-                </TableHeaderCell>
-                <TableHeaderCell className={styles.headerCell}>
-                  Actions
-                </TableHeaderCell>
-                {/* <TableHeaderCell /> */}
-              </TableRow>
-            </TableHeader>
-
-            <TableBody>
-              {lines.map((line, index) => (
-                <TableRow key={line.lineNo}>
-                  {/* LINE */}
-                  <TableCell className={styles.tableCells}>
-                    <div className={styles.lineNo}>{line.lineNo}</div>
-                  </TableCell>
-
-                  {/* ACCOUNT */}
-                  <TableCell
-                    className={`${styles.tableCells} ${styles.accountCell}`}
-                  >
-                    <Dropdown
-                      className={styles.accountDropdown}
-                      placeholder="Select"
-                      value={getAccountById(line.accountId)?.accountName || ""}
-                      onOptionSelect={(_, data) =>
-                        handleAccountChange(index, data.optionValue)
-                      }
-                    >
-                      {(chartAccounts || []).map((account) => (
-                        <Option key={account.id} value={account.id}>
-                          {account.code ? `${account.code} - ` : ""}
-                          {account.accountName}
-                        </Option>
-                      ))}
-                    </Dropdown>
-                  </TableCell>
-
-                  {/* DEBIT */}
-                  <TableCell className={styles.tableCells}>
-                    <Input
-                      ref={(element) => {
-                        debitRefs.current[index] = element;
-                      }}
-                      className={styles.amountInput}
-                      value={line.debit}
-                      placeholder="£0.00"
-                      onChange={(event) =>
-                        handleAmountChange(index, "debit", event.target.value)
-                      }
-                    />
-                  </TableCell>
-
-                  {/* CREDIT */}
-                  <TableCell className={styles.tableCells}>
-                    <Input
-                      ref={(element) => {
-                        creditRefs.current[index] = element;
-                      }}
-                      className={styles.amountInput}
-                      value={line.credit}
-                      placeholder="£0.00"
-                      onChange={(event) =>
-                        handleAmountChange(index, "credit", event.target.value)
-                      }
-                    />
-                  </TableCell>
-
-                  {/* ADD */}
-
-                  <TableCell
-                    className={`${styles.tableCells} ${styles.addCell}`}
-                  >
-                    {index === lines.length - 1 ? (
-                      <Button
-                        appearance="subtle"
-                        icon={<AddRegular />}
-                        onClick={addLine}
-                        aria-label="Add journal line"
-                        title="Add journal line"
-                        disabled={
-                          !line.accountId &&
-                          !line.debit &&
-                          !line.credit
-                        }
-                      />
-                    ) : (
-                      <Button
-                        appearance="subtle"
-                        icon={<Delete16Regular />}
-                        onClick={() => deleteLine(index)}
-                        aria-label="Delete journal line"
-                        title="Delete journal line"
-                      />
-                    )}
-                  </TableCell>
-                  {/* <TableCell
-                    className={`${styles.tableCells} ${styles.addCell}`}
-                  >
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        gap: "4px",
-                      }}
-                    >
-                      <Button
-                        appearance="subtle"
-                        icon={<Delete16Regular />}
-                        onClick={() => deleteLine(index)}
-                        disabled={lines.length <= 1}
-                        aria-label="Delete journal line"
-                        title="Delete journal line"
-                      />
-
-                      <Button
-                        appearance="subtle"
-                        icon={<AddRegular />}
-                        onClick={addLine}
-                        aria-label="Add journal line"
-                        title="Add journal line"
-                      />
-                    </div>
-                  </TableCell> */}
+        {/* JOURNAL TABLE & TOTALS SECTION */}
+        {isReadOnlyCsvMode ? (
+          <div className={styles.tableWrapper}>
+            <h4 style={{ marginBottom: "12px", fontSize: "15px", fontWeight: 600 }}>CSV Mapped Preview</h4>
+            <Table className={styles.table}>
+              <TableHeader>
+                <TableRow>
+                  <TableHeaderCell className={styles.headerCell}>Line no</TableHeaderCell>
+                  <TableHeaderCell className={styles.headerCell}>Account</TableHeaderCell>
+                  <TableHeaderCell className={styles.headerCell}>Debit (£)</TableHeaderCell>
+                  <TableHeaderCell className={styles.headerCell}>Credit (£)</TableHeaderCell>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-
-        {/* TOTALS */}
-        <div className={styles.totals}>
-          <div className={styles.totalRow}>
-            <span className={styles.totalLabel}>Total Dr.</span>
-            <Input
-              className={styles.totalInput}
-              value={formatCurrency(totalDebit)}
-              readOnly
-            />
+              </TableHeader>
+              <TableBody>
+                {lines.map((line) => (
+                  <TableRow key={line.lineNo}>
+                    <TableCell className={styles.tableCells}>
+                      <div className={styles.lineNo}>{line.lineNo}</div>
+                    </TableCell>
+                    <TableCell className={`${styles.tableCells} ${styles.accountCell}`}>
+                      <span>
+                        {line.accountCode && line.accountName
+                          ? `${line.accountCode} - ${line.accountName}`
+                          : line.accountName || line.accountCode || "-"}
+                      </span>
+                    </TableCell>
+                    <TableCell className={styles.tableCells}>
+                      <span>{line.debit ? formatCurrency(line.debit) : "-"}</span>
+                    </TableCell>
+                    <TableCell className={styles.tableCells}>
+                      <span>{line.credit ? formatCurrency(line.credit) : "-"}</span>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </div>
+        ) : (
+          <>
+            {/* ACCOUNT BUTTON */}
+            {!csvImportMode && (
+              <div className={styles.accountButtonContainer}>
+                <Button
+                  className={styles.accountButton}
+                  icon={<AddRegular />}
+                  onClick={addLine}
+                >
+                  Account
+                </Button>
+              </div>
+            )}
 
-          <div className={styles.totalRow}>
-            <span className={styles.totalLabel}>Total Cr.</span>
-            <Input
-              className={styles.totalInput}
-              value={formatCurrency(totalCredit)}
-              readOnly
-            />
-          </div>
+            {/* JOURNAL TABLE (EDITABLE) */}
+            <div className={styles.tableWrapper}>
+              <Table className={styles.table}>
+                <TableHeader>
+                  <TableRow>
+                    <TableHeaderCell className={styles.headerCell}>Line no</TableHeaderCell>
+                    <TableHeaderCell className={styles.headerCell}>Account</TableHeaderCell>
+                    <TableHeaderCell className={styles.headerCell}>Debit (£)</TableHeaderCell>
+                    <TableHeaderCell className={styles.headerCell}>Credit (£)</TableHeaderCell>
+                    <TableHeaderCell className={styles.headerCell}>Actions</TableHeaderCell>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {lines.map((line, index) => (
+                    <TableRow key={line.lineNo}>
+                      <TableCell className={styles.tableCells}>
+                        <div className={styles.lineNo}>{line.lineNo}</div>
+                      </TableCell>
+                      <TableCell className={`${styles.tableCells} ${styles.accountCell}`}>
+                        <Combobox
+                          className={styles.accountDropdown}
+                          placeholder="Select or type account"
+                          freeform={true}
+                          value={
+                            line.accountName ||
+                            (line.accountCode ? `${line.accountCode} - ${line.accountName || ""}` : "") ||
+                            getAccountById(line.accountId)?.accountName ||
+                            ""
+                          }
+                          onChange={(event) =>
+                            handleAccountNameChange(index, event.target.value)
+                          }
+                          onOptionSelect={(_, data) =>
+                            handleAccountChange(index, data.optionValue)
+                          }
+                        >
+                          {(chartAccounts || []).map((account) => (
+                            <Option key={account.id} value={account.id} text={account.accountName}>
+                              {account.code ? `${account.code} - ` : ""}
+                              {account.accountName}
+                            </Option>
+                          ))}
+                        </Combobox>
+                      </TableCell>
+                      <TableCell className={styles.tableCells}>
+                        <Input
+                          ref={(element) => {
+                            debitRefs.current[index] = element;
+                          }}
+                          className={styles.amountInput}
+                          value={line.debit}
+                          placeholder="£0.00"
+                          onChange={(event) =>
+                            handleAmountChange(index, "debit", event.target.value)
+                          }
+                        />
+                      </TableCell>
+                      <TableCell className={styles.tableCells}>
+                        <Input
+                          ref={(element) => {
+                            creditRefs.current[index] = element;
+                          }}
+                          className={styles.amountInput}
+                          value={line.credit}
+                          placeholder="£0.00"
+                          onChange={(event) =>
+                            handleAmountChange(index, "credit", event.target.value)
+                          }
+                        />
+                      </TableCell>
+                      <TableCell className={`${styles.tableCells} ${styles.addCell}`}>
+                        {index === lines.length - 1 ? (
+                          <Button
+                            appearance="subtle"
+                            icon={<AddRegular />}
+                            onClick={addLine}
+                            aria-label="Add journal line"
+                            title="Add journal line"
+                            disabled={!line.accountId && !line.debit && !line.credit}
+                          />
+                        ) : (
+                          <Button
+                            appearance="subtle"
+                            icon={<Delete16Regular />}
+                            onClick={() => deleteLine(index)}
+                            aria-label="Delete journal line"
+                            title="Delete journal line"
+                          />
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
 
-          <div className={styles.totalRow}>
-            <span className={styles.totalLabel}>Status</span>
-            <Input
-              className={styles.statusInput}
-              value={
-                isBalanced
-                  ? "Balanced"
-                  : `${balanceSide} ${formatCurrency(balanceAmount)}`
-              }
-              readOnly
-              style={{
-                color: isBalanced ? "#107c10" : "#d13438",
-              }}
-            />
-          </div>
+            {/* TOTALS SECTION */}
+            <div className={styles.totals}>
+              <div className={styles.totalRow}>
+                <span className={styles.totalLabel}>Total Dr.</span>
+                <Input className={styles.totalInput} value={formatCurrency(totalDebit)} readOnly />
+              </div>
 
+              <div className={styles.totalRow}>
+                <span className={styles.totalLabel}>Total Cr.</span>
+                <Input className={styles.totalInput} value={formatCurrency(totalCredit)} readOnly />
+              </div>
 
+              <div className={styles.totalRow}>
+                <span className={styles.totalLabel}>Status</span>
+                <Input
+                  className={styles.statusInput}
+                  value={
+                    isBalanced
+                      ? "Balanced"
+                      : `${balanceSide} ${formatCurrency(balanceAmount)}`
+                  }
+                  readOnly
+                  style={{
+                    color: isBalanced ? "#107c10" : "#d13438",
+                  }}
+                />
+              </div>
 
-          <div className={styles.totalRow}>
-            <span className={styles.totalLabel}>{profitLossLabel}</span>
-
-            <span className={styles.profitLabel}>
-              {formatCurrency(profitLossAmount)}
-            </span>
-          </div>
-        </div>
+              <div className={styles.totalRow}>
+                <span className={styles.totalLabel}>{profitLossLabel}</span>
+                <span className={styles.profitLabel}>{formatCurrency(profitLossAmount)}</span>
+              </div>
+            </div>
+          </>
+        )}
 
         {/* FOOTER */}
         <div className={styles.footer}>
-          <Button
-            appearance="secondary"
-            icon={<ArrowLeftRegular />}
-            onClick={() => navigate(-1)}
-          >
-            Back
-          </Button>
+          <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+            <Button
+              appearance="secondary"
+              icon={<ArrowLeftRegular />}
+              onClick={() => navigate(-1)}
+            >
+              Back
+            </Button>
 
-          <Menu>
-            <MenuTrigger disableButtonEnhancement>
+            {isReadOnlyCsvMode && (
               <Button
                 className={styles.saveButton}
-                icon={<Save20Regular />}
-                disabled={saving}
+                onClick={handleImportCsv}
+                disabled={importing}
               >
-                {saving ? "Saving..." : "Save"}
-                <ChevronDown20Regular />
+                {importing ? "Importing..." : "Import"}
               </Button>
-            </MenuTrigger>
+            )}
+          </div>
 
-            <MenuPopover>
-              <MenuList>
-                <MenuItem onClick={handleSave} disabled={saving}>
-                  Save Draft
-                </MenuItem>
+          {!isReadOnlyCsvMode && (
+            <Menu>
+              <MenuTrigger disableButtonEnhancement>
+                <Button
+                  className={styles.saveButton}
+                  icon={<Save20Regular />}
+                  disabled={saving}
+                >
+                  {saving ? "Saving..." : "Save"}
+                  <ChevronDown20Regular />
+                </Button>
+              </MenuTrigger>
 
-                <MenuItem onClick={handleSave} disabled={saving}>
-                  Post
-                </MenuItem>
+              <MenuPopover>
+                <MenuList>
+                  <MenuItem onClick={handleSave} disabled={saving}>
+                    Save Draft
+                  </MenuItem>
 
-                <MenuItem onClick={handleSave} disabled={saving}>
-                  Post & Add Accounts
-                </MenuItem>
-              </MenuList>
-            </MenuPopover>
-          </Menu>
+                  <MenuItem onClick={handleSave} disabled={saving}>
+                    Post
+                  </MenuItem>
+
+                  <MenuItem onClick={handleSave} disabled={saving}>
+                    Post & Add Accounts
+                  </MenuItem>
+                </MenuList>
+              </MenuPopover>
+            </Menu>
+          )}
         </div>
       </div>
     </div>

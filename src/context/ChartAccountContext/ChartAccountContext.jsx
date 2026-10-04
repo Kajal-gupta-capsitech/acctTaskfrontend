@@ -99,6 +99,44 @@ export const ChartAccountProvider = ({ children }) => {
     }
   };
 
+  // UPDATE
+  const updateChartAccount = async (id, accountData) => {
+    try {
+      setError(null);
+
+      const response = await api.patch(`/ChartAccounts/${id}`, accountData);
+
+      await getChartAccounts();
+
+      return response.data;
+    } catch (err) {
+      console.error("Error updating chart account:", err);
+
+      setError(err);
+
+      throw err;
+    }
+  };
+
+  // DELETE
+  const deleteChartAccount = async (id) => {
+    try {
+      setError(null);
+
+      const response = await api.delete(`/ChartAccounts/${id}`);
+
+      await getChartAccounts();
+
+      return response.data;
+    } catch (err) {
+      console.error("Error deleting chart account:", err);
+
+      setError(err);
+
+      throw err;
+    }
+  };
+
   return (
     <ChartAccountContext.Provider
       value={{
@@ -107,6 +145,8 @@ export const ChartAccountProvider = ({ children }) => {
         error,
         getChartAccounts,
         createChartAccount,
+        updateChartAccount,
+        deleteChartAccount,
       }}
     >
       {children}

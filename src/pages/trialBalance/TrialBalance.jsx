@@ -5,9 +5,22 @@ import {
   TabList,
   Tab,
   makeStyles,
+  Dialog,
+  DialogSurface,
+  DialogTitle,
+  DialogBody,
+  DialogContent,
+  DialogActions,
+  Table,
+  TableHeader,
+  TableRow,
+  TableHeaderCell,
+  TableBody,
+  TableCell,
+  Spinner,
 } from "@fluentui/react-components";
 
-import { Add20Regular } from "@fluentui/react-icons";
+import { Add20Regular, Dismiss24Regular } from "@fluentui/react-icons";
 
 import { useNavigate } from "react-router-dom";
 
@@ -163,14 +176,38 @@ const TrialBalance = () => {
   |--------------------------------------------------------------------------
   */
 
+  const { showSuccess, showError } = useToast();
+
   const {
     trialBalances,
     loading,
     error,
     getTrialBalances,
+    getTrialBalanceById,
     createTrialBalance,
     deleteTrialBalance,
   } = useTrialBalance();
+
+  const [selectedTbForModal, setSelectedTbForModal] = React.useState(null);
+  const [isModalOpen, setIsModalOpen] = React.useState(false);
+  const [modalLoading, setModalLoading] = React.useState(false);
+
+  const handleOpenTbModal = React.useCallback(
+    async (id) => {
+      try {
+        setModalLoading(true);
+        setIsModalOpen(true);
+        const res = await getTrialBalanceById(id);
+        setSelectedTbForModal(res?.result || res);
+      } catch (err) {
+        console.error("Failed to load trial balance details:", err);
+        showError(err);
+      } finally {
+        setModalLoading(false);
+      }
+    },
+    [getTrialBalanceById, showError]
+  );
 
 
   /*
@@ -245,7 +282,6 @@ const TrialBalance = () => {
   };
 
 
-  const { showSuccess, showError } = useToast();
 
   const handleEditItem = React.useCallback(
     (item) => {
@@ -347,8 +383,19 @@ const TrialBalance = () => {
       return {
         sNo: index + 1,
 
-        refNo:
-          trialBalance.refNo || "",
+        refNo: (
+          <span
+            style={{
+              color: "#0078d4",
+              cursor: "pointer",
+              fontWeight: 600,
+              textDecoration: "underline",
+            }}
+            onClick={() => handleOpenTbModal(trialBalance.id)}
+          >
+            {trialBalance.refNo || trialBalance.name || `TB-${trialBalance.id.substring(0, 6)}`}
+          </span>
+        ),
 
         period,
 
@@ -830,132 +877,58 @@ const TrialBalance = () => {
 
       if (data.importMode === "csv" && data.file) {
         const csvText = await data.file.text();
-
         csvRows = parseCsv(csvText);
-
-        console.log("Parsed CSV Rows:", csvRows);
-
-        if (csvRows.length === 0) {
-          throw new Error(
-            "CSV file is empty or does not contain valid data."
-          );
-        }
       }
 
       const payload = new FormData();
 
-
       payload.append(
         "trialBalanceType",
-        data.trialBalanceType === "statutory"
-          ? "0"
-          : "1"
+        data.trialBalanceType === "statutory" ? "0" : "1"
       );
 
-      /*
-       * Accounting Period
-       */
       if (data.accountingPeriodId) {
-        payload.append(
-          "accountingPeriodId",
-          data.accountingPeriodId
-        );
+        payload.append("accountingPeriodId", data.accountingPeriodId);
       }
 
-      /*
-       * Chart Account
-       */
       if (data.chartAccountId) {
-        payload.append(
-          "chartAccountId",
-          data.chartAccountId
-        );
+        payload.append("chartAccountId", data.chartAccountId);
       }
 
-      payload.append(
-        "importMode",
-        data.importMode === "csv"
-          ? "0"
-          : "1"
-      );
+      payload.append("importMode", data.importMode === "csv" ? "0" : "1");
 
-      /*
-       * Import Format
-       */
       if (data.importFormat) {
-        payload.append(
-          "importFormat",
-          data.importFormat
-        );
+        payload.append("importFormat", data.importFormat);
       }
 
-      if (
-        data.importMode === "csv" &&
-        data.file
-      ) {
-        payload.append(
-          "csvFile",
-          data.file,
-          data.file.name
-        );
-        payload.append(
-          "file",
-          data.file,
-          data.file.name
-        );
+      if (data.importMode === "csv" && data.file) {
+        payload.append("csvFile", data.file, data.file.name);
+        payload.append("file", data.file, data.file.name);
       }
 
-      console.log("Trial Balance FormData:");
-
-      for (const [key, value] of payload.entries()) {
-        console.log(
-          key,
-          value instanceof File
-            ? {
-              name: value.name,
-              size: value.size,
-              type: value.type,
-            }
-            : value
-        );
-      }
-
-      const createdRes =
-        await createTrialBalance(payload);
-
+      const createdRes = await createTrialBalance(payload);
       const successMessage =
         createdRes?.message || "Trial balance created successfully.";
-
       showSuccess(successMessage);
 
-      const createdTrialBalance =
-        createdRes?.result || createdRes;
-
-      const trialBalanceId =
-        createdTrialBalance?.id;
+      const createdTrialBalance = createdRes?.result || createdRes;
+      const trialBalanceId = createdTrialBalance?.id;
 
       if (!trialBalanceId) {
-        throw new Error(
-          "Trial Balance ID was not returned by the API."
-        );
+        throw new Error("Trial Balance ID was not returned by the API.");
       }
 
       setIsDrawerOpen(false);
 
-      navigate(
-        `/trial-balances/${trialBalanceId}/journal`,
-        {
-          state: {
-            trialBalanceData:
-              createdTrialBalance,
-            importMode: data.importMode,
-            csvRows:
-              data.importMode === "csv"
-                ? csvRows
-                : [],
-          },
-        }
-      );
+      navigate(`/trial-balances/${trialBalanceId}/journal`, {
+        state: {
+          trialBalanceData: createdTrialBalance,
+          importMode: data.importMode,
+          csvRows: data.importMode === "csv" ? csvRows : [],
+          drawerFormData: data,
+          file: data.file,
+        },
+      });
 
     } catch (err) {
       console.error(
@@ -1183,9 +1156,119 @@ const TrialBalance = () => {
 
       )}
 
+      {/* Trial Balance Details Modal */}
+      <Dialog
+        open={isModalOpen}
+        onOpenChange={(_, data) => {
+          if (!data.open) {
+            setIsModalOpen(false);
+            setSelectedTbForModal(null);
+          }
+        }}
+      >
+        <DialogSurface style={{ maxWidth: "720px", width: "100%" }}>
+          <DialogBody>
+            <DialogTitle
+              action={
+                <Button
+                  appearance="subtle"
+                  aria-label="Close"
+                  icon={<Dismiss24Regular />}
+                  onClick={() => setIsModalOpen(false)}
+                />
+              }
+            >
+              Trial Balance Details - {selectedTbForModal?.refNo || selectedTbForModal?.name || ""}
+            </DialogTitle>
+
+            <DialogContent style={{ marginTop: "12px" }}>
+              {modalLoading ? (
+                <div style={{ display: "flex", justifyContent: "center", padding: "40px" }}>
+                  <Spinner label="Loading details..." />
+                </div>
+              ) : selectedTbForModal ? (
+                <div>
+                  {/* Summary Grid */}
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "1fr 1fr",
+                      gap: "12px",
+                      backgroundColor: "#f9f9f9",
+                      padding: "16px",
+                      borderRadius: "6px",
+                      marginBottom: "20px",
+                      fontSize: "14px",
+                    }}
+                  >
+                    <div><strong>Ref No:</strong> {selectedTbForModal.refNo || selectedTbForModal.name || "-"}</div>
+                    <div><strong>Type:</strong> {selectedTbForModal.type === 0 || selectedTbForModal.trialBalanceType === 0 ? "Statutory" : "Management"}</div>
+                    <div>
+                      <strong>Period:</strong>{" "}
+                      {selectedTbForModal.period
+                        ? `${formatDate(selectedTbForModal.period.periodFrom)} - ${formatDate(selectedTbForModal.period.periodTo)}`
+                        : selectedTbForModal.accountingPeriod
+                        ? `${formatDate(selectedTbForModal.accountingPeriod.periodFrom)} - ${formatDate(selectedTbForModal.accountingPeriod.periodTo)}`
+                        : "-"}
+                    </div>
+                    <div><strong>Import Mode:</strong> {selectedTbForModal.importMode === 0 ? "CSV" : "Manual"}</div>
+                    <div><strong>Status:</strong> {selectedTbForModal.status === 1 ? "Balanced" : "Draft"}</div>
+                    <div>
+                      <strong>Turnover:</strong> £{Number(selectedTbForModal.turnover || 0).toLocaleString("en-GB", { minimumFractionDigits: 2 })}
+                    </div>
+                    {selectedTbForModal.description && (
+                      <div style={{ gridColumn: "span 2" }}><strong>Description:</strong> {selectedTbForModal.description}</div>
+                    )}
+                  </div>
+
+                  {/* Items Table */}
+                  <h4 style={{ marginBottom: "10px", color: "#171717" }}>Imported / Journal Items</h4>
+                  {selectedTbForModal.items && selectedTbForModal.items.length > 0 ? (
+                    <div style={{ maxHeight: "300px", overflowY: "auto" }}>
+                      <Table style={{ width: "100%", borderCollapse: "collapse" }}>
+                        <TableHeader>
+                          <TableRow style={{ backgroundColor: "#f3f3f3" }}>
+                            <TableHeaderCell style={{ fontWeight: 600, padding: "8px" }}>Line No</TableHeaderCell>
+                            <TableHeaderCell style={{ fontWeight: 600, padding: "8px" }}>Account Code</TableHeaderCell>
+                            <TableHeaderCell style={{ fontWeight: 600, padding: "8px" }}>Account Name</TableHeaderCell>
+                            <TableHeaderCell style={{ fontWeight: 600, padding: "8px", textAlign: "right" }}>Debit (£)</TableHeaderCell>
+                            <TableHeaderCell style={{ fontWeight: 600, padding: "8px", textAlign: "right" }}>Credit (£)</TableHeaderCell>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {selectedTbForModal.items.map((item, idx) => (
+                            <TableRow key={idx}>
+                              <TableCell style={{ padding: "8px" }}>{idx + 1}</TableCell>
+                              <TableCell style={{ padding: "8px" }}>{item.accountCode || item.account?.code || "-"}</TableCell>
+                              <TableCell style={{ padding: "8px" }}>{item.accountName || item.account?.name || item.account?.accountName || "-"}</TableCell>
+                              <TableCell style={{ padding: "8px", textAlign: "right" }}>
+                                {item.debit ? `£${Number(item.debit).toLocaleString("en-GB", { minimumFractionDigits: 2 })}` : "-"}
+                              </TableCell>
+                              <TableCell style={{ padding: "8px", textAlign: "right" }}>
+                                {item.credit ? `£${Number(item.credit).toLocaleString("en-GB", { minimumFractionDigits: 2 })}` : "-"}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  ) : (
+                    <p style={{ color: "#666" }}>No line items found for this trial balance.</p>
+                  )}
+                </div>
+              ) : null}
+            </DialogContent>
+
+            <DialogActions style={{ marginTop: "20px" }}>
+              <Button appearance="secondary" onClick={() => setIsModalOpen(false)}>
+                Close
+              </Button>
+            </DialogActions>
+          </DialogBody>
+        </DialogSurface>
+      </Dialog>
     </div>
   );
 };
-
 
 export default TrialBalance;
