@@ -873,7 +873,7 @@ const CreateTrialBalance = () => {
           journalType: Number(formData.journalType ?? 0),
           periodId: formData.accountingPeriodId || null,
           accountingPeriodId: formData.accountingPeriodId || null,
-          description: formData.description || null,
+          description: formData.description || "",
           turnover,
           totalProfitLoss: profitLossAmount,
           status: isBalanced ? 1 : 0,
@@ -940,7 +940,7 @@ const CreateTrialBalance = () => {
         journalType: Number(formData.journalType ?? 0),
         periodId: formData.accountingPeriodId || null,
         accountingPeriodId: formData.accountingPeriodId || null,
-        description: formData.description || null,
+        description: formData.description || "",
         turnover,
         totalProfitLoss: profitLossAmount,
         status: isBalanced ? 1 : 0,
@@ -1264,6 +1264,7 @@ const CreateTrialBalance = () => {
             </div>
           </>
         )}
+
 
         {/* FOOTER */}
         <div className={styles.footer}>
