@@ -293,7 +293,8 @@ const CreateTrialBalance = () => {
   const { trialBalanceId } = useParams();
 
   const csvImportMode = location.state?.importMode === "csv";
-  const importedCsvRows = location.state?.csvRows || [];
+  // const importedCsvRows = location.state?.csvRows || [];
+  const importedCsvRows = React.useMemo(() => location.state?.csvRows || [], [location.state?.csvRows]);
 
   const { showSuccess, showError } = useToast();
 
@@ -361,7 +362,7 @@ const CreateTrialBalance = () => {
 
         const trialBalance = trialBalanceRes?.result || trialBalanceRes;
         const availableAccounts = chartAccountsRes || [];
-
+        console.log("trialBalance", trialBalance)
         setTrialBalanceData(trialBalance);
 
         const periodIdVal =
@@ -450,10 +451,13 @@ const CreateTrialBalance = () => {
     };
   }, [trialBalanceId]);
 
+  const hasInitializedLines = React.useRef(false);
+
   useEffect(() => {
     if (loading) return;
 
-    if (csvImportMode && importedCsvRows.length > 0) {
+    // CSV import mode — map imported rows to lines (runs once)
+    if (csvImportMode && importedCsvRows.length > 0 && !hasInitializedLines.current) {
       const mappedLines = importedCsvRows.map((row, index) => {
         const account = (chartAccounts || []).find(
           (item) =>
@@ -477,10 +481,12 @@ const CreateTrialBalance = () => {
       });
 
       setLines(mappedLines);
+      hasInitializedLines.current = true;
       return;
     }
 
-    if (lines.length > 0) {
+    // Enrich existing lines with account info (runs once after chartAccounts load)
+    if (!hasInitializedLines.current && lines.length > 0) {
       setLines((prevLines) =>
         prevLines.map((line) => {
           const account = getAccountById(line.accountId);
@@ -492,11 +498,12 @@ const CreateTrialBalance = () => {
           };
         })
       );
+      hasInitializedLines.current = true;
       return;
     }
 
     // Manual mode starts with one empty row
-    if (!csvImportMode && lines.length === 0) {
+    if (!csvImportMode && lines.length === 0 && !hasInitializedLines.current) {
       setLines([
         {
           lineNo: 1,
@@ -508,6 +515,7 @@ const CreateTrialBalance = () => {
           accountNature: null,
         },
       ]);
+      hasInitializedLines.current = true;
     }
   }, [loading, csvImportMode, importedCsvRows, chartAccounts]);
   /* ---------------------------------------------------------
@@ -795,56 +803,6 @@ const CreateTrialBalance = () => {
         : "Profit / Loss";
 
   const turnover = Math.max(totalDebit, totalCredit);
-
-  // const totalCredit = React.useMemo(() => {
-  //   return lines.reduce(
-  //     (total, line) =>
-  //       total + (parseFloat(line.credit) || 0),
-  //     0
-  //   );
-  // }, [lines]);
-  /* ---------------------------------------------------------
-   * SAVE / PATCH
-   * --------------------------------------------------------- */
-  // const handleSave = async () => {
-  //   if (!trialBalanceId) {
-  //     alert("Trial Balance ID is missing.");
-  //     return;
-  //   }
-
-  //   if (!formData.accountingPeriodId) {
-  //     alert("Please select an accounting period.");
-  //     return;
-  //   }
-
-  //   try {
-  //     setSaving(true);
-
-  //     const payload = {
-  //       journalType: Number(formData.journalType ?? 0),
-  //       accountingPeriodId: formData.accountingPeriodId || null,
-  //       description: formData.description || null,
-  //       turnover,
-  //       status: isBalanced ? 1 : 0,
-  //     };
-
-  //     console.log("PATCH Trial Balance payload:", payload);
-
-  //     /*
-  //      * PATCH returns 204 No Content.
-  //      * That is a successful response and does not need response.data.
-  //      */
-  //     await updateTrialBalance(trialBalanceId, payload);
-
-  //     navigate(-1);
-  //   } catch (error) {
-  //     console.error("Failed to update Trial Balance:", error);
-
-  //     alert("Failed to save Trial Balance. Please check the API response.");
-  //   } finally {
-  //     setSaving(false);
-  //   }
-  // };
 
   const handleImportCsv = async () => {
     try {
