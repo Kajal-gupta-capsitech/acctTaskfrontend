@@ -904,6 +904,7 @@ const CreateTrialBalance = () => {
         journalType: Number(formData.journalType ?? 0),
          periodStart: formData.periodStart || null,
         periodEnd: formData.periodEnd || null,
+         journalId: formData.journalIds[0] || null,
         periodId: formData.accountingPeriodId || null,
         accountingPeriodId: formData.accountingPeriodId || null,
         description: formData.description || "",

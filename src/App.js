@@ -38,6 +38,12 @@ const App = () => {
             path="trial-balances/:trialBalanceId/journal"
             element={<CreateTrialBalance />}
           />
+
+           <Route
+            // path="trial-balances/:trialBalanceId/journal/:journalId"
+            path="trial-balances/:trialBalanceId/journal/:journalId"
+            element={<CreateTrialBalance />}
+          />
         </Route>
       </Routes>
     </BrowserRouter>

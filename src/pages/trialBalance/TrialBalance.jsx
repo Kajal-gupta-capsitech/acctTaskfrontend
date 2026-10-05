@@ -281,11 +281,10 @@ const TrialBalance = () => {
     return new Date(date).toLocaleDateString("en-GB");
   };
 
-
-
   const handleEditItem = React.useCallback(
     (item) => {
-      navigate(`/trial-balances/${item.id}/journal`);
+      console.log("item", item);
+      navigate(`/trial-balances/${item.name}/journal/${item.JournalIds?.[0] || 0}`);
     },
     [navigate]
   );
@@ -312,7 +311,6 @@ const TrialBalance = () => {
     [deleteTrialBalance, showSuccess, showError]
   );
 
-
   /*
   |--------------------------------------------------------------------------
   | Trial Balance Table Data
@@ -320,8 +318,10 @@ const TrialBalance = () => {
   */
 
   const trialBalanceItems = React.useMemo(() => {
-    return trialBalances.map((trialBalance, index) => {
 
+
+    return trialBalances.map((trialBalance, index) => {
+        
       const periodFrom =
         trialBalance.accountingPeriod?.periodFrom
         || trialBalance?.periodStart
@@ -385,7 +385,7 @@ const TrialBalance = () => {
 
       return {
         sNo: index + 1,
-
+        name : trialBalance.refNo,
         refNo: (
           <span
             style={{
@@ -409,14 +409,13 @@ const TrialBalance = () => {
           trialBalance.description || "",
 
         type,
-
+        JournalIds: trialBalance?.journalIds,
         accountReports:
           trialBalance.accountReports || "",
 
         importType,
 
         status,
-
         id:
           trialBalance.id,
 
@@ -1091,16 +1090,13 @@ const TrialBalance = () => {
 
           </div>
 
-
           {/* Trial Balance Table */}
 
           <TableComponent
             items={trialBalanceItems}
             columns={trialBalanceColumns}
           />
-
         </div>
-
       )}
 
 
@@ -1226,7 +1222,7 @@ const TrialBalance = () => {
                       <strong>Period:</strong>{" "}
                       {selectedTbForModal.period
                         ? `${formatDate(selectedTbForModal.period.periodFrom)} - ${formatDate(selectedTbForModal.period.periodTo)}`
-                         :selectedTbForModal.periodStart ?   `${formatDate(selectedTbForModal.periodStart)} - ${formatDate(selectedTbForModal.periodEnd)}`  : "-"}
+                        : selectedTbForModal.periodStart ? `${formatDate(selectedTbForModal.periodStart)} - ${formatDate(selectedTbForModal.periodEnd)}` : "-"}
                     </div>
                     <div><strong>Import Mode:</strong> {selectedTbForModal.importMode === 0 ? "CSV" : "Manual"}</div>
                     <div><strong>Status:</strong> {selectedTbForModal.status === 1 ? "Balanced" : "Draft"}</div>
