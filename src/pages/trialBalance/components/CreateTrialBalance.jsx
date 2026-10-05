@@ -320,6 +320,9 @@ const CreateTrialBalance = () => {
     refNo: "",
     journalType: 0,
     accountingPeriodId: "",
+    periodStart: "",
+    periodEnd: "",
+    accountingPeriodId: "",
     journalId: "",
     description: "Trial balance",
     file: null,
@@ -383,6 +386,8 @@ const CreateTrialBalance = () => {
             trialBalance?.journalType ??
             0
           ),
+          periodStart:  trialBalance?.periodStart ?? "" ,
+          periodEnd:  trialBalance?.periodEnd ?? "" ,
           accountingPeriodId: periodIdVal,
           journalId: trialBalance?.journalId || "",
           description: trialBalance?.description || "",
@@ -551,8 +556,6 @@ const CreateTrialBalance = () => {
     if (
       nature === 0 ||
       nature === "0" ||
-      nature === 2 ||
-      nature === "2" ||
       String(nature).toLowerCase() === "credit" ||
       String(nature).toLowerCase() === "cr"
     ) {
@@ -581,8 +584,8 @@ const CreateTrialBalance = () => {
     : trialBalanceData?.accountingPeriod
       ? getPeriodLabel(trialBalanceData.accountingPeriod)
       : trialBalanceData?.period
-        ? getPeriodLabel(trialBalanceData.period)
-        : "";
+        ?  getPeriodLabel(trialBalanceData.period)
+        : trialBalanceData?.periodStart ?  `${formatDate(trialBalanceData.periodStart)} - ${formatDate(trialBalanceData.periodEnd)}` : "";
 
   /* ---------------------------------------------------------
    * FORM CHANGE
@@ -829,7 +832,10 @@ const CreateTrialBalance = () => {
         const payload = {
           type: Number(formData.journalType ?? 0),
           journalType: Number(formData.journalType ?? 0),
+          periodStart: formData.periodStart || null,
+          periodEnd: formData.periodEnd || null,
           periodId: formData.accountingPeriodId || null,
+          // periodId: formData.accountingPeriodId || null,
           accountingPeriodId: formData.accountingPeriodId || null,
           description: formData.description || "",
           turnover,
@@ -857,10 +863,10 @@ const CreateTrialBalance = () => {
       return;
     }
 
-    if (!formData.accountingPeriodId) {
-      showError("Please select an accounting period.");
-      return;
-    }
+    // if (!formData.accountingPeriodId) {
+    //   showError("Please select an accounting period.");
+    //   return;
+    // }
 
     // Prevent saving an unbalanced trial balance
     if (!isBalanced) {
@@ -896,6 +902,8 @@ const CreateTrialBalance = () => {
       const payload = {
         type: Number(formData.journalType ?? 0),
         journalType: Number(formData.journalType ?? 0),
+         periodStart: formData.periodStart || null,
+        periodEnd: formData.periodEnd || null,
         periodId: formData.accountingPeriodId || null,
         accountingPeriodId: formData.accountingPeriodId || null,
         description: formData.description || "",
@@ -908,6 +916,7 @@ const CreateTrialBalance = () => {
       console.log("PATCH Trial Balance payload:", payload);
 
       const res = await updateTrialBalance(trialBalanceId, payload);
+    
       const message = res?.message || "Trial balance updated successfully.";
 
       showSuccess(message);

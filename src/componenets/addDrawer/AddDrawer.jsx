@@ -197,14 +197,9 @@ const AddDrawer = ({
     if (onSubmit) {
       onSubmit(formData);
     }
-
   };
 
-
-
   const renderField = (field) => {
-
-
 
     if (field.type === "date") {
       let dateValue = undefined;

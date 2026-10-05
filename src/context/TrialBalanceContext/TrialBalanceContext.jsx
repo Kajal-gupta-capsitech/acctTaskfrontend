@@ -175,6 +175,7 @@ export const TrialBalanceProvider = ({ children }) => {
         trialBalanceData
       );
 
+      console.log("response", response);
       // Refresh list after update
       await getTrialBalances();
 

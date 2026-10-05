@@ -294,8 +294,7 @@ const TrialBalance = () => {
     async (item) => {
       if (
         window.confirm(
-          `Are you sure you want to delete Trial Balance "${
-            item.refNo || item.id
+          `Are you sure you want to delete Trial Balance "${item.refNo || item.id
           }"?`
         )
       ) {
@@ -324,10 +323,14 @@ const TrialBalance = () => {
     return trialBalances.map((trialBalance, index) => {
 
       const periodFrom =
-        trialBalance.accountingPeriod?.periodFrom;
+        trialBalance.accountingPeriod?.periodFrom
+        || trialBalance?.periodStart
+        ;
 
       const periodTo =
-        trialBalance.accountingPeriod?.periodTo;
+        trialBalance.accountingPeriod?.periodTo
+        || trialBalance?.periodEnd
+        ;
 
       const period =
         periodFrom && periodTo
@@ -343,9 +346,9 @@ const TrialBalance = () => {
 
       let type = "";
 
-      if (trialBalance.trialBalanceType === 0) {
+      if (trialBalance.type === 0) {
         type = "Statutory";
-      } else if (trialBalance.trialBalanceType === 1) {
+      } else if (trialBalance.type === 1) {
         type = "Management";
       }
 
@@ -358,9 +361,9 @@ const TrialBalance = () => {
 
       let importType = "";
 
-      if (trialBalance.importMode === 0) {
+      if (trialBalance.importType === 0) {
         importType = "CSV";
-      } else if (trialBalance.importMode === 1) {
+      } else if (trialBalance.importType === 1) {
         importType = "Manual";
       }
 
@@ -524,7 +527,7 @@ const TrialBalance = () => {
 
         period: `${formatDate(
           period.periodFrom
-        )} - ${formatDate(
+        )}  - ${formatDate(
           period.periodTo
         )}`,
 
@@ -897,6 +900,22 @@ const TrialBalance = () => {
 
       payload.append("importMode", data.importMode === "csv" ? "0" : "1");
 
+      if (data.periodFrom) {
+        const periodStartVal =
+          data.periodFrom instanceof Date
+            ? data.periodFrom.toISOString()
+            : new Date(data.periodFrom).toISOString();
+        payload.append("periodStart", periodStartVal);
+      }
+
+      if (data.periodTo) {
+        const periodEndVal =
+          data.periodTo instanceof Date
+            ? data.periodTo.toISOString()
+            : new Date(data.periodTo).toISOString();
+        payload.append("periodEnd", periodEndVal);
+      }
+
       if (data.importFormat) {
         payload.append("importFormat", data.importFormat);
       }
@@ -1127,17 +1146,17 @@ const TrialBalance = () => {
               initialValues={
                 editingPeriod
                   ? {
-                      periodFrom: editingPeriod.periodFrom
-                        ? new Date(editingPeriod.periodFrom)
-                        : null,
-                      periodTo: editingPeriod.periodTo
-                        ? new Date(editingPeriod.periodTo)
-                        : null,
-                    }
+                    periodFrom: editingPeriod.periodFrom
+                      ? new Date(editingPeriod.periodFrom)
+                      : null,
+                    periodTo: editingPeriod.periodTo
+                      ? new Date(editingPeriod.periodTo)
+                      : null,
+                  }
                   : {
-                      periodFrom: null,
-                      periodTo: null,
-                    }
+                    periodFrom: null,
+                    periodTo: null,
+                  }
               }
               onSubmit={handleAccountingPeriodSubmit}
             />
@@ -1178,7 +1197,7 @@ const TrialBalance = () => {
                 />
               }
             >
-              Trial Balance Details - {selectedTbForModal?.refNo || selectedTbForModal?.name || ""}
+              Trial Balance Details - {selectedTbForModal?.trialBalance?.name}
             </DialogTitle>
 
             <DialogContent style={{ marginTop: "12px" }}>
@@ -1201,15 +1220,13 @@ const TrialBalance = () => {
                       fontSize: "14px",
                     }}
                   >
-                    <div><strong>Ref No:</strong> {selectedTbForModal.refNo || selectedTbForModal.name || "-"}</div>
+                    <div><strong>Ref No:</strong> {selectedTbForModal.trialBalance?.name || "-"}</div>
                     <div><strong>Type:</strong> {selectedTbForModal.type === 0 || selectedTbForModal.trialBalanceType === 0 ? "Statutory" : "Management"}</div>
                     <div>
                       <strong>Period:</strong>{" "}
                       {selectedTbForModal.period
                         ? `${formatDate(selectedTbForModal.period.periodFrom)} - ${formatDate(selectedTbForModal.period.periodTo)}`
-                        : selectedTbForModal.accountingPeriod
-                        ? `${formatDate(selectedTbForModal.accountingPeriod.periodFrom)} - ${formatDate(selectedTbForModal.accountingPeriod.periodTo)}`
-                        : "-"}
+                         :selectedTbForModal.periodStart ?   `${formatDate(selectedTbForModal.periodStart)} - ${formatDate(selectedTbForModal.periodEnd)}`  : "-"}
                     </div>
                     <div><strong>Import Mode:</strong> {selectedTbForModal.importMode === 0 ? "CSV" : "Manual"}</div>
                     <div><strong>Status:</strong> {selectedTbForModal.status === 1 ? "Balanced" : "Draft"}</div>
