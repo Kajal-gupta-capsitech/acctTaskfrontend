@@ -394,9 +394,9 @@ const TrialBalance = () => {
               fontWeight: 600,
               textDecoration: "underline",
             }}
-            onClick={() => handleOpenTbModal(trialBalance.id)}
+            onClick={() => handleOpenTbModal(trialBalance.refNo)}
           >
-            {trialBalance.refNo || trialBalance.name || `TB-${trialBalance.id.substring(0, 6)}`}
+            {trialBalance.refNo}
           </span>
         ),
 
@@ -930,8 +930,8 @@ const TrialBalance = () => {
       showSuccess(successMessage);
 
       const createdTrialBalance = createdRes?.result || createdRes;
-      const trialBalanceId = createdTrialBalance?.id;
-
+      const trialBalanceId = createdTrialBalance?.refNo;
+console.log("createdTrialBalance", createdTrialBalance)
       if (!trialBalanceId) {
         throw new Error("Trial Balance ID was not returned by the API.");
       }

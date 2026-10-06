@@ -158,6 +158,37 @@ export const TrialBalanceProvider = ({ children }) => {
   }
 };
 
+
+// ==========================================
+// IMPORT CSV
+// ==========================================
+const importTrialBalance = async (
+  refNo,
+  importData
+) => {
+  try {
+    setError(null);
+
+    const response = await api.post(
+      `/TrialBalances/${refNo}/imports`,
+      importData
+    );
+
+    // Refresh Trial Balance list
+    await getTrialBalances();
+
+    return response.data;
+  } catch (err) {
+    console.error(
+      "Error importing trial balance:",
+      err
+    );
+
+    setError(err);
+
+    throw err;
+  }
+};
   // ==========================================
   // UPDATE / PATCH
   // ==========================================
@@ -231,6 +262,7 @@ export const TrialBalanceProvider = ({ children }) => {
         getTrialBalances,
         getTrialBalanceById,
         createTrialBalance,
+        importTrialBalance,
         updateTrialBalance,
         deleteTrialBalance,
       }}

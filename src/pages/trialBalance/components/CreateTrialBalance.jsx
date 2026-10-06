@@ -298,7 +298,7 @@ const CreateTrialBalance = () => {
 
   const { showSuccess, showError } = useToast();
 
-  const { getTrialBalanceById, updateTrialBalance } = useTrialBalance();
+  const { getTrialBalanceById, updateTrialBalance ,importTrialBalance} = useTrialBalance();
 
   const { chartAccounts, getChartAccounts } = useChartAccount();
 
@@ -386,8 +386,8 @@ const CreateTrialBalance = () => {
             trialBalance?.journalType ??
             0
           ),
-          periodStart:  trialBalance?.periodStart ?? "" ,
-          periodEnd:  trialBalance?.periodEnd ?? "" ,
+          periodStart: trialBalance?.periodStart ?? "",
+          periodEnd: trialBalance?.periodEnd ?? "",
           accountingPeriodId: periodIdVal,
           journalId: trialBalance?.journalId || "",
           description: trialBalance?.description || "",
@@ -584,8 +584,8 @@ const CreateTrialBalance = () => {
     : trialBalanceData?.accountingPeriod
       ? getPeriodLabel(trialBalanceData.accountingPeriod)
       : trialBalanceData?.period
-        ?  getPeriodLabel(trialBalanceData.period)
-        : trialBalanceData?.periodStart ?  `${formatDate(trialBalanceData.periodStart)} - ${formatDate(trialBalanceData.periodEnd)}` : "";
+        ? getPeriodLabel(trialBalanceData.period)
+        : trialBalanceData?.periodStart ? `${formatDate(trialBalanceData.periodStart)} - ${formatDate(trialBalanceData.periodEnd)}` : "";
 
   /* ---------------------------------------------------------
    * FORM CHANGE
@@ -807,55 +807,196 @@ const CreateTrialBalance = () => {
 
   const turnover = Math.max(totalDebit, totalCredit);
 
-  const handleImportCsv = async () => {
-    try {
-      setImporting(true);
 
-      const mappedItems = lines
-        .filter(
-          (line) =>
-            (line.accountId || line.accountName || line.accountCode) &&
-            (parseFloat(line.debit) || parseFloat(line.credit))
-        )
-        .map((line) => {
-          const account = getAccountById(line.accountId);
-          return {
-            accountCode: line.accountCode || account?.code || "",
-            accountName: line.accountName || account?.accountName || "",
-            debit: parseFloat(line.debit) || 0,
-            credit: parseFloat(line.credit) || 0,
-            note: line.note || "",
-          };
-        });
+const handleImportCsv = async () => {
+  try {
+    setImporting(true);
 
-      if (trialBalanceId) {
-        const payload = {
-          type: Number(formData.journalType ?? 0),
-          journalType: Number(formData.journalType ?? 0),
-          periodStart: formData.periodStart || null,
-          periodEnd: formData.periodEnd || null,
-          periodId: formData.accountingPeriodId || null,
-          // periodId: formData.accountingPeriodId || null,
-          accountingPeriodId: formData.accountingPeriodId || null,
-          description: formData.description || "",
-          turnover,
-          totalProfitLoss: profitLossAmount,
-          status: isBalanced ? 1 : 0,
-          items: mappedItems,
-        };
+    // ============================================================
+    // VALIDATE TRIAL BALANCE REF NO
+    // ============================================================
 
-        await updateTrialBalance(trialBalanceId, payload);
-      }
-
-      showSuccess("CSV imported successfully.");
-      setImportCompleted(true);
-    } catch (err) {
-      console.error("Failed to import CSV:", err);
-      showError(err);
-    } finally {
-      setImporting(false);
+    if (!formData.refNo) {
+      showError(
+        "Trial Balance reference number is missing."
+      );
+      return;
     }
-  };
+
+
+    // ============================================================
+    // BUILD RAW IMPORT ROWS
+    //
+    // IMPORTANT:
+    // Do NOT resolve Chart Accounts here.
+    //
+    // The imported CSV can contain invalid account codes.
+    // We store the values exactly as imported.
+    // ============================================================
+
+    const importRows = lines
+      .filter((line) => {
+        return (
+          line.accountCode ||
+          line.accountName ||
+          line.debit ||
+          line.credit
+        );
+      })
+      .map((line) => ({
+        code:
+          line.accountCode || "",
+
+        name:
+          line.accountName || "",
+
+        // AccountNature is required by the backend model.
+        // 1 = Debit
+        // 0 = Credit
+        nature:
+          parseFloat(line.debit) > 0
+            ? 1
+            : 0,
+
+        debit:
+          parseFloat(line.debit) || 0,
+
+        credit:
+          parseFloat(line.credit) || 0,
+
+        note:
+          line.note || "",
+      }));
+
+
+    // ============================================================
+    // VALIDATE ROWS
+    // ============================================================
+
+    if (importRows.length === 0) {
+      showError(
+        "CSV does not contain any valid rows."
+      );
+      return;
+    }
+
+
+    // ============================================================
+    // CSV HEADERS
+    // ============================================================
+    //
+    // These are the headers of the CSV being imported.
+    // They are not Chart Account values.
+    // ============================================================
+
+    const headers = [
+      "Account Code",
+      "Account Name",
+      "Debit",
+      "Credit",
+    ];
+
+
+    // ============================================================
+    // CSV COLUMN CONFIGURATION
+    // ============================================================
+
+    const columns = [
+      {
+        type: 0,
+        index: 0,
+        name: "Account Code",
+      },
+      {
+        type: 0,
+        index: 1,
+        name: "Account Name",
+      },
+      {
+        type: 0,
+        index: 2,
+        name: "Debit",
+      },
+      {
+        type: 0,
+        index: 3,
+        name: "Credit",
+      },
+    ];
+
+
+    // ============================================================
+    // BUILD IMPORT PAYLOAD
+    // ============================================================
+
+    const payload = {
+      columns,
+
+      headers,
+
+      rows: importRows,
+
+      csvImportType:
+        Number(
+          formData.csvImportType ?? 0
+        ),
+    };
+
+
+    console.log(
+      "CSV Import Payload:",
+      payload
+    );
+
+
+    // ============================================================
+    // CALL IMPORT API
+    //
+    // POST:
+    // /api/TrialBalances/{RefNo}/imports
+    //
+    // Example:
+    // /api/TrialBalances/TB-34/imports
+    // ============================================================
+
+    const response =
+      await importTrialBalance(
+        formData.refNo,
+        payload
+      );
+
+
+    console.log(
+      "CSV Import Response:",
+      response
+    );
+
+
+    // ============================================================
+    // SUCCESS
+    // ============================================================
+
+    showSuccess(
+      "CSV imported successfully."
+    );
+
+    setImportCompleted(true);
+
+  } catch (err) {
+    console.error(
+      "Failed to import CSV:",
+      err
+    );
+
+    showError(
+      err?.response?.data?.message ||
+      "Failed to import CSV."
+    );
+
+  } finally {
+    setImporting(false);
+  }
+};
 
   const handleSave = async () => {
     if (!trialBalanceId) {
@@ -902,9 +1043,9 @@ const CreateTrialBalance = () => {
       const payload = {
         type: Number(formData.journalType ?? 0),
         journalType: Number(formData.journalType ?? 0),
-         periodStart: formData.periodStart || null,
+        periodStart: formData.periodStart || null,
         periodEnd: formData.periodEnd || null,
-         journalId: formData.journalIds[0] || null,
+        journalId: formData?.journalIds?.[0] !== "0" ?  formData?.journalIds?.[0] : null,
         periodId: formData.accountingPeriodId || null,
         accountingPeriodId: formData.accountingPeriodId || null,
         description: formData.description || "",
@@ -917,7 +1058,7 @@ const CreateTrialBalance = () => {
       console.log("PATCH Trial Balance payload:", payload);
 
       const res = await updateTrialBalance(trialBalanceId, payload);
-    
+
       const message = res?.message || "Trial balance updated successfully.";
 
       showSuccess(message);
