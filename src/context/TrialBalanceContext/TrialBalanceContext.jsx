@@ -40,6 +40,16 @@ export const TrialBalanceProvider = ({ children }) => {
     }
   };
 
+   const getTrialBalanceDetails = async (id) => {
+  try {
+    const response = await api.get(`/TrialBalances/${id}/details`);
+
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching trial balance details:", error);
+    throw error;
+  }
+};
   // ==========================================
   // GET BY ID
   // ==========================================
@@ -64,6 +74,33 @@ export const TrialBalanceProvider = ({ children }) => {
     }
   };
 
+
+  // ==========================================
+// GET JOURNAL BY ID
+// ==========================================
+const getJournalById = async (
+  refNo,
+  journalId
+) => {
+  try {
+    setError(null);
+
+    const response = await api.get(
+      `/TrialBalances/${refNo}/journals/${journalId}`
+    );
+
+    return response.data;
+  } catch (err) {
+    console.error(
+      "Error fetching journal:",
+      err
+    );
+
+    setError(err);
+
+    throw err;
+  }
+};
   // ==========================================
   // CREATE
   // ==========================================
@@ -250,6 +287,58 @@ const importTrialBalance = async (
     }
   };
 
+  // ==========================================
+// CREATE / UPDATE JOURNAL
+// ==========================================
+const createOrUpdateJournal = async (
+  refNo,
+  journalId,
+  journalData,
+  attachment = null
+) => {
+  try {
+    setError(null);
+
+    const formData = new FormData();
+
+    // Journal object must be sent as JSON string
+    formData.append(
+      "journal",
+      JSON.stringify(journalData)
+    );
+
+    // Attachment is optional
+    if (attachment) {
+      formData.append(
+        "attachment",
+        attachment
+      );
+    }
+
+    const response = await api.post(
+      `/TrialBalances/${refNo}/journals/${journalId}`,
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      }
+    );
+
+    return response.data;
+  } catch (err) {
+    console.error(
+      "Error creating/updating journal:",
+      err
+    );
+
+    setError(err);
+
+    throw err;
+  }
+};
+
+
   return (
     <TrialBalanceContext.Provider
       value={{
@@ -265,6 +354,11 @@ const importTrialBalance = async (
         importTrialBalance,
         updateTrialBalance,
         deleteTrialBalance,
+        getJournalById,
+        getTrialBalanceDetails,
+
+ // Journal
+          createOrUpdateJournal,
       }}
     >
       {children}

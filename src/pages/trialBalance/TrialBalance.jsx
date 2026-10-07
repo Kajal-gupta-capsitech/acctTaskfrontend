@@ -116,7 +116,6 @@ const trialBalanceColumns = [
   },
 ];
 
-
 /*
 |--------------------------------------------------------------------------
 | Accounting Period Table Columns
@@ -284,7 +283,8 @@ const TrialBalance = () => {
   const handleEditItem = React.useCallback(
     (item) => {
       console.log("item", item);
-      navigate(`/trial-balances/${item.name}/journal/${item.JournalIds?.[0] || 0}`);
+      // navigate(`/trial-balances/${item.name}/journal/${item.JournalIds?.[0] || 0}`);
+      navigate(`/trial-balances/${item.name}`);
     },
     [navigate]
   );
@@ -931,14 +931,14 @@ const TrialBalance = () => {
 
       const createdTrialBalance = createdRes?.result || createdRes;
       const trialBalanceId = createdTrialBalance?.refNo;
-console.log("createdTrialBalance", createdTrialBalance)
+      console.log("createdTrialBalance", createdTrialBalance)
       if (!trialBalanceId) {
         throw new Error("Trial Balance ID was not returned by the API.");
       }
 
       setIsDrawerOpen(false);
 
-      navigate(`/trial-balances/${trialBalanceId}/journal`, {
+      navigate(`/trial-balances/${trialBalanceId}/journal/0`, {
         state: {
           trialBalanceData: createdTrialBalance,
           importMode: data.importMode,

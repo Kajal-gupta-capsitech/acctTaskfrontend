@@ -290,15 +290,15 @@ const CreateTrialBalance = () => {
   const styles = useStyles();
   const navigate = useNavigate();
   const location = useLocation();
-  const { trialBalanceId } = useParams();
+  const { trialBalanceId, journalId } = useParams();
 
   const csvImportMode = location.state?.importMode === "csv";
-  // const importedCsvRows = location.state?.csvRows || [];
+
   const importedCsvRows = React.useMemo(() => location.state?.csvRows || [], [location.state?.csvRows]);
 
   const { showSuccess, showError } = useToast();
 
-  const { getTrialBalanceById, updateTrialBalance ,importTrialBalance} = useTrialBalance();
+  const { getTrialBalanceById, updateTrialBalance, importTrialBalance, createOrUpdateJournal, getJournalById } = useTrialBalance();
 
   const { chartAccounts, getChartAccounts } = useChartAccount();
 
@@ -356,7 +356,7 @@ const CreateTrialBalance = () => {
         }
 
         const [trialBalanceRes, chartAccountsRes] = await Promise.all([
-          getTrialBalanceById(trialBalanceId),
+          getJournalById(trialBalanceId, journalId),
           getChartAccounts(),
           getAccountingPeriods(),
         ]);
@@ -390,8 +390,14 @@ const CreateTrialBalance = () => {
           periodEnd: trialBalance?.periodEnd ?? "",
           accountingPeriodId: periodIdVal,
           journalId: trialBalance?.journalId || "",
-          description: trialBalance?.description || "",
-          file: null,
+          journalIds: trialBalance?.journalIds || [],
+          description: trialBalance?.journals?.[0]?.description || "",
+          file: trialBalance?.attachments
+            ? {
+              name: trialBalance.attachments.name,
+              path: trialBalance.attachments.path,
+            }
+            : null,
         });
 
         if (
@@ -448,13 +454,13 @@ const CreateTrialBalance = () => {
         }
       }
     };
-
     loadData();
 
     return () => {
       mounted = false;
     };
   }, [trialBalanceId]);
+  console.log("formData", formData)
 
   const hasInitializedLines = React.useRef(false);
 
@@ -808,206 +814,270 @@ const CreateTrialBalance = () => {
   const turnover = Math.max(totalDebit, totalCredit);
 
 
-const handleImportCsv = async () => {
-  try {
-    setImporting(true);
+  const handleImportCsv = async () => {
+    try {
+      setImporting(true);
 
-    // ============================================================
-    // VALIDATE TRIAL BALANCE REF NO
-    // ============================================================
+      // ============================================================
+      // VALIDATE TRIAL BALANCE REF NO
+      // ============================================================
 
-    if (!formData.refNo) {
-      showError(
-        "Trial Balance reference number is missing."
-      );
-      return;
-    }
-
-
-    // ============================================================
-    // BUILD RAW IMPORT ROWS
-    //
-    // IMPORTANT:
-    // Do NOT resolve Chart Accounts here.
-    //
-    // The imported CSV can contain invalid account codes.
-    // We store the values exactly as imported.
-    // ============================================================
-
-    const importRows = lines
-      .filter((line) => {
-        return (
-          line.accountCode ||
-          line.accountName ||
-          line.debit ||
-          line.credit
+      if (!formData.refNo) {
+        showError(
+          "Trial Balance reference number is missing."
         );
-      })
-      .map((line) => ({
-        code:
-          line.accountCode || "",
-
-        name:
-          line.accountName || "",
-
-        // AccountNature is required by the backend model.
-        // 1 = Debit
-        // 0 = Credit
-        nature:
-          parseFloat(line.debit) > 0
-            ? 1
-            : 0,
-
-        debit:
-          parseFloat(line.debit) || 0,
-
-        credit:
-          parseFloat(line.credit) || 0,
-
-        note:
-          line.note || "",
-      }));
+        return;
+      }
 
 
-    // ============================================================
-    // VALIDATE ROWS
-    // ============================================================
+      // ============================================================
+      // BUILD RAW IMPORT ROWS
+      //
+      // IMPORTANT:
+      // Do NOT resolve Chart Accounts here.
+      //
+      // The imported CSV can contain invalid account codes.
+      // We store the values exactly as imported.
+      // ============================================================
 
-    if (importRows.length === 0) {
-      showError(
-        "CSV does not contain any valid rows."
-      );
-      return;
-    }
+      const importRows = lines
+        .filter((line) => {
+          return (
+            line.accountCode ||
+            line.accountName ||
+            line.debit ||
+            line.credit
+          );
+        })
+        .map((line) => ({
+          code:
+            line.accountCode || "",
 
+          name:
+            line.accountName || "",
 
-    // ============================================================
-    // CSV HEADERS
-    // ============================================================
-    //
-    // These are the headers of the CSV being imported.
-    // They are not Chart Account values.
-    // ============================================================
+          // AccountNature is required by the backend model.
+          // 1 = Debit
+          // 0 = Credit
+          nature:
+            parseFloat(line.debit) > 0
+              ? 1
+              : 0,
 
-    const headers = [
-      "Account Code",
-      "Account Name",
-      "Debit",
-      "Credit",
-    ];
+          debit:
+            parseFloat(line.debit) || 0,
 
+          credit:
+            parseFloat(line.credit) || 0,
 
-    // ============================================================
-    // CSV COLUMN CONFIGURATION
-    // ============================================================
-
-    const columns = [
-      {
-        type: 0,
-        index: 0,
-        name: "Account Code",
-      },
-      {
-        type: 0,
-        index: 1,
-        name: "Account Name",
-      },
-      {
-        type: 0,
-        index: 2,
-        name: "Debit",
-      },
-      {
-        type: 0,
-        index: 3,
-        name: "Credit",
-      },
-    ];
+          note:
+            line.note || "",
+        }));
 
 
-    // ============================================================
-    // BUILD IMPORT PAYLOAD
-    // ============================================================
+      // ============================================================
+      // VALIDATE ROWS
+      // ============================================================
 
-    const payload = {
-      columns,
-
-      headers,
-
-      rows: importRows,
-
-      csvImportType:
-        Number(
-          formData.csvImportType ?? 0
-        ),
-    };
+      if (importRows.length === 0) {
+        showError(
+          "CSV does not contain any valid rows."
+        );
+        return;
+      }
 
 
-    console.log(
-      "CSV Import Payload:",
-      payload
-    );
+      // ============================================================
+      // CSV HEADERS
+      // ============================================================
+      //
+      // These are the headers of the CSV being imported.
+      // They are not Chart Account values.
+      // ============================================================
+
+      const headers = [
+        "Account Code",
+        "Account Name",
+        "Debit",
+        "Credit",
+      ];
 
 
-    // ============================================================
-    // CALL IMPORT API
-    //
-    // POST:
-    // /api/TrialBalances/{RefNo}/imports
-    //
-    // Example:
-    // /api/TrialBalances/TB-34/imports
-    // ============================================================
+      // ============================================================
+      // CSV COLUMN CONFIGURATION
+      // ============================================================
 
-    const response =
-      await importTrialBalance(
-        formData.refNo,
+      const columns = [
+        {
+          type: 0,
+          index: 0,
+          name: "Account Code",
+        },
+        {
+          type: 0,
+          index: 1,
+          name: "Account Name",
+        },
+        {
+          type: 0,
+          index: 2,
+          name: "Debit",
+        },
+        {
+          type: 0,
+          index: 3,
+          name: "Credit",
+        },
+      ];
+
+
+      // ============================================================
+      // BUILD IMPORT PAYLOAD
+      // ============================================================
+
+      const payload = {
+        columns,
+
+        headers,
+
+        rows: importRows,
+
+        csvImportType:
+          Number(
+            formData.csvImportType ?? 0
+          ),
+      };
+
+
+      console.log(
+        "CSV Import Payload:",
         payload
       );
 
 
-    console.log(
-      "CSV Import Response:",
-      response
-    );
+      // ============================================================
+      // CALL IMPORT API
+      //
+      // POST:
+      // /api/TrialBalances/{RefNo}/imports
+      //
+      // Example:
+      // /api/TrialBalances/TB-34/imports
+      // ============================================================
+
+      const response =
+        await importTrialBalance(
+          formData.refNo,
+          payload
+        );
 
 
-    // ============================================================
-    // SUCCESS
-    // ============================================================
+      console.log(
+        "CSV Import Response:",
+        response
+      );
 
-    showSuccess(
-      "CSV imported successfully."
-    );
 
-    setImportCompleted(true);
+      // ============================================================
+      // SUCCESS
+      // ============================================================
 
-  } catch (err) {
-    console.error(
-      "Failed to import CSV:",
-      err
-    );
+      showSuccess(
+        "CSV imported successfully."
+      );
 
-    showError(
-      err?.response?.data?.message ||
-      "Failed to import CSV."
-    );
+      setImportCompleted(true);
 
-  } finally {
-    setImporting(false);
-  }
-};
+    } catch (err) {
+      console.error(
+        "Failed to import CSV:",
+        err
+      );
+
+      showError(
+        err?.response?.data?.message ||
+        "Failed to import CSV."
+      );
+
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  // const handleSave = async () => {
+  //   if (!trialBalanceId) {
+  //     showError("Trial Balance ID is missing.");
+  //     return;
+  //   }
+
+  //   // Prevent saving an unbalanced trial balance
+  //   if (!isBalanced) {
+  //     showError(
+  //       `Amount is not balanced. Debit and Credit must be equal (Debit: ${formatCurrency(
+  //         totalDebit
+  //       )}, Credit: ${formatCurrency(totalCredit)}).`
+  //     );
+
+  //     return;
+  //   }
+
+  //   try {
+  //     setSaving(true);
+
+  //     const mappedItems = lines
+  //       .filter(
+  //         (line) =>
+  //           (line.accountId || line.accountName || line.accountCode) &&
+  //           (parseFloat(line.debit) || parseFloat(line.credit))
+  //       )
+  //       .map((line) => {
+  //         const account = getAccountById(line.accountId);
+  //         return {
+  //           accountCode: line.accountCode || account?.code || "",
+  //           accountName: line.accountName || account?.accountName || "",
+  //           debit: parseFloat(line.debit) || 0,
+  //           credit: parseFloat(line.credit) || 0,
+  //           note: line.note || "",
+  //         };
+  //       });
+
+  //     const payload = {
+  //       type: Number(formData.journalType ?? 0),
+  //       journalType: Number(formData.journalType ?? 0),
+  //       periodStart: formData.periodStart || null,
+  //       periodEnd: formData.periodEnd || null,
+  //       journalId: formData?.journalIds?.[0] !== "0" ?  formData?.journalIds?.[0] : null,
+  //       periodId: formData.accountingPeriodId || null,
+  //       accountingPeriodId: formData.accountingPeriodId || null,
+  //       description: formData.description || "",
+  //       turnover,
+  //       totalProfitLoss: profitLossAmount,
+  //       status: isBalanced ? 1 : 0,
+  //       items: mappedItems,
+  //     };
+
+  //     console.log("PATCH Trial Balance payload:", payload);
+
+  //     const res = await updateTrialBalance(trialBalanceId, payload);
+
+  //     const message = res?.message || "Trial balance updated successfully.";
+
+  //     showSuccess(message);
+  //     navigate("/trial-balances");
+  //   } catch (error) {
+  //     console.error("Failed to update Trial Balance:", error);
+  //     showError(error);
+  //   } finally {
+  //     setSaving(false);
+  //   }
+  // };
+
 
   const handleSave = async () => {
     if (!trialBalanceId) {
       showError("Trial Balance ID is missing.");
       return;
     }
-
-    // if (!formData.accountingPeriodId) {
-    //   showError("Please select an accounting period.");
-    //   return;
-    // }
 
     // Prevent saving an unbalanced trial balance
     if (!isBalanced) {
@@ -1023,54 +1093,295 @@ const handleImportCsv = async () => {
     try {
       setSaving(true);
 
+      // ==========================================================
+      // MAP JOURNAL ITEMS
+      // ==========================================================
+
       const mappedItems = lines
         .filter(
           (line) =>
-            (line.accountId || line.accountName || line.accountCode) &&
-            (parseFloat(line.debit) || parseFloat(line.credit))
+            (line.accountId ||
+              line.accountName ||
+              line.accountCode) &&
+            (parseFloat(line.debit) ||
+              parseFloat(line.credit))
         )
         .map((line) => {
-          const account = getAccountById(line.accountId);
+          const account =
+            getAccountById(line.accountId);
+
           return {
-            accountCode: line.accountCode || account?.code || "",
-            accountName: line.accountName || account?.accountName || "",
-            debit: parseFloat(line.debit) || 0,
-            credit: parseFloat(line.credit) || 0,
-            note: line.note || "",
+            accountCode:
+              line.accountCode ||
+              account?.code ||
+              "",
+
+            accountName:
+              line.accountName ||
+              account?.accountName ||
+              "",
+
+            debit:
+              parseFloat(line.debit) || 0,
+
+            credit:
+              parseFloat(line.credit) || 0,
+
+            note:
+              line.note || "",
+
+            // If your backend expects Nature
+            nature:
+              (parseFloat(line.debit) || 0) > 0
+                ? 1
+                : 0,
           };
         });
 
-      const payload = {
-        type: Number(formData.journalType ?? 0),
-        journalType: Number(formData.journalType ?? 0),
-        periodStart: formData.periodStart || null,
-        periodEnd: formData.periodEnd || null,
-        journalId: formData?.journalIds?.[0] !== "0" ?  formData?.journalIds?.[0] : null,
-        periodId: formData.accountingPeriodId || null,
-        accountingPeriodId: formData.accountingPeriodId || null,
-        description: formData.description || "",
-        turnover,
-        totalProfitLoss: profitLossAmount,
-        status: isBalanced ? 1 : 0,
-        items: mappedItems,
+
+      // ==========================================================
+      // GET JOURNAL ID
+      //
+      // "0" = CREATE NEW JOURNAL
+      // MongoDB ID = UPDATE EXISTING JOURNAL
+      // ==========================================================
+
+      const journalId =
+        formData?.journalIds?.[0] || "0";
+
+
+      // ==========================================================
+      // JOURNAL PAYLOAD
+      // ==========================================================
+
+      const journalPayload = {
+        type:
+          Number(formData.journalType ?? 0),
+
+        journalType:
+          Number(formData.journalType ?? 0),
+
+        periodStart:
+          formData.periodStart || null,
+
+        periodEnd:
+          formData.periodEnd || null,
+
+        periodId:
+          formData.accountingPeriodId || null,
+
+        description:
+          formData.description || "",
+
+        journalStatus:
+          0,
+
+        importType:
+          1,
+
+        csvImportType:
+          0,
+
+        isActive:
+          true,
+
+        items:
+          mappedItems,
+
+        itemsCount:
+          mappedItems.length,
+
+        totalDebit:
+          totalDebit,
+
+        totalCredit:
+          totalCredit,
+
+        status:
+          isBalanced ? 1 : 0,
       };
 
-      console.log("PATCH Trial Balance payload:", payload);
 
-      const res = await updateTrialBalance(trialBalanceId, payload);
+      console.log(
+        "Journal ID:",
+        journalId
+      );
 
-      const message = res?.message || "Trial balance updated successfully.";
+      console.log(
+        "Journal Payload:",
+        journalPayload
+      );
+
+
+      // ==========================================================
+      // CREATE / UPDATE JOURNAL
+      // ==========================================================
+
+      const response =
+        await createOrUpdateJournal(
+          formData.refNo || formData.number,
+          journalId,
+          journalPayload, formData.file
+
+        );
+
+
+      // ==========================================================
+      // SUCCESS
+      // ==========================================================
+
+      const message =
+        response?.message ||
+        (
+          journalId === "0"
+            ? "Journal created successfully."
+            : "Journal updated successfully."
+        );
 
       showSuccess(message);
+
       navigate("/trial-balances");
+
     } catch (error) {
-      console.error("Failed to update Trial Balance:", error);
-      showError(error);
+      console.error(
+        "Failed to save Journal:",
+        error
+      );
+
+      showError(
+        error?.response?.data?.message ||
+        error?.message ||
+        "Failed to save Journal."
+      );
+
     } finally {
       setSaving(false);
     }
   };
 
+
+  // const handleSave = async () => {
+  //   if (!trialBalanceId) {
+  //     showError("Trial Balance ID is missing.");
+  //     return;
+  //   }
+
+  //   if (!isBalanced) {
+  //     showError(
+  //       `Amount is not balanced. Debit and Credit must be equal 
+  //       (Debit: ${formatCurrency(totalDebit)}, 
+  //        Credit: ${formatCurrency(totalCredit)}).`
+  //     );
+  //     return;
+  //   }
+
+  //   try {
+  //     setSaving(true);
+
+  //     const mappedItems = lines
+  //       .filter(
+  //         (line) =>
+  //           (line.accountId ||
+  //             line.accountName ||
+  //             line.accountCode) &&
+  //           (parseFloat(line.debit) ||
+  //             parseFloat(line.credit))
+  //       )
+  //       .map((line) => {
+  //         const account = getAccountById(line.accountId);
+
+  //         return {
+  //           accountCode:
+  //             line.accountCode ||
+  //             account?.code ||
+  //             "",
+
+  //           accountName:
+  //             line.accountName ||
+  //             account?.accountName ||
+  //             "",
+
+  //           debit: parseFloat(line.debit) || 0,
+  //           credit: parseFloat(line.credit) || 0,
+  //           note: line.note || "",
+  //         };
+  //       });
+
+  //     // IMPORTANT
+  //     const journalId =
+  //       formData?.journalId &&
+  //       formData.journalId !== "0"
+  //         ? formData.journalId
+  //         : "0";
+
+  //     const journalPayload = {
+  //       type: Number(formData.journalType ?? 0),
+
+  //       journalType:
+  //         Number(formData.journalType ?? 0),
+
+  //       journalStatus:
+  //         Number(formData.journalStatus ?? 0),
+
+  //       importType: 1,
+
+  //       csvImportType: 0,
+
+  //       periodStart:
+  //         formData.periodStart || null,
+
+  //       periodEnd:
+  //         formData.periodEnd || null,
+
+  //       description:
+  //         formData.description || "",
+
+  //       isActive: true,
+
+  //       items: mappedItems,
+
+  //       itemsCount: mappedItems.length,
+
+  //       totalDebit: totalDebit,
+
+  //       totalCredit: totalCredit,
+
+  //       status: isBalanced ? 1 : 0,
+  //     };
+
+  //     console.log("Journal ID:", journalId);
+  //     console.log("Journal Payload:", journalPayload);
+
+  //     const response =
+  //       await createOrUpdateJournal(
+  //         formData.refNo,
+  //         journalId,
+  //         journalPayload,
+  //         formData.file || null
+  //       );
+
+  //     showSuccess(
+  //       response?.message ||
+  //         "Journal saved successfully."
+  //     );
+
+  //     navigate("/trial-balances");
+
+  //   } catch (error) {
+  //     console.error(
+  //       "Failed to save journal:",
+  //       error
+  //     );
+
+  //     showError(
+  //       error?.response?.data?.message ||
+  //       "Failed to save journal."
+  //     );
+
+  //   } finally {
+  //     setSaving(false);
+  //   }
+  // };
   /* ---------------------------------------------------------
    * LOADING
    * --------------------------------------------------------- */

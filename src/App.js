@@ -6,6 +6,7 @@ import TrialBalance from "./pages/trialBalance/TrialBalance";
 import ChartAccounts from "./pages/chartAccounts/ChartAccounts";
 import AccountingPeriod from "./pages/accounts/Accounts";
 import CreateTrialBalance from "./pages/trialBalance/components/CreateTrialBalance";
+import TbDetails from "./pages/trialBalance/components/TrialBalanceDetailsPage";
 
 const App = () => {
   return (
@@ -35,8 +36,8 @@ const App = () => {
           {/* Create Journal page also keeps the sidebar */}
           <Route
             // path="trial-balances/:trialBalanceId/journal/:journalId"
-            path="trial-balances/:trialBalanceId/journal"
-            element={<CreateTrialBalance />}
+            path="trial-balances/:trialBalanceId"
+            element={<TbDetails />}
           />
 
            <Route
