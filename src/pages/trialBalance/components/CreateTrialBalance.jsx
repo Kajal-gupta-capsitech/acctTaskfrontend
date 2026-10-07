@@ -134,11 +134,11 @@ const useStyles = makeStyles({
   },
 
   description: {
-    minWidth: "60vw",
+    minWidth: "40vw",
   },
 
   attachment: {
-    width: "100%",
+    minWidth: "40vw",
     minHeight: "60px",
     border: "2px dashed #eeeeee",
     display: "flex",
