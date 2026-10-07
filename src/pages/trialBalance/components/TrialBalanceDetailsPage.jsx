@@ -30,8 +30,9 @@ import {
   AttachRegular,
   CheckmarkRegular,
 } from "@fluentui/react-icons";
-import {  useTrialBalance } from "../../../context/TrialBalanceContext/TrialBalanceContext";
+import { useTrialBalance } from "../../../context/TrialBalanceContext/TrialBalanceContext";
 import { useNavigate, useParams } from "react-router-dom";
+import { BreadCrumbs } from "../../../componenets/breadCrumbs/BreadCrumbs";
 
 // import { getTrialBalanceDetails } from "../../api/trialBalanceDetailsApi";
 
@@ -42,6 +43,8 @@ const useStyles = makeStyles({
     backgroundColor: "#ffffff",
     padding: "16px 24px",
     boxSizing: "border-box",
+    // border:"2px solid red",
+
   },
 
   title: {
@@ -68,7 +71,7 @@ const useStyles = makeStyles({
   topForm: {
     width: "100%",
     display: "grid",
-    gridTemplateColumns: "150px 1fr",
+    gridTemplateColumns: "150px max-content",
     rowGap: "10px",
     columnGap: "12px",
     marginBottom: "18px",
@@ -81,6 +84,9 @@ const useStyles = makeStyles({
     color: "#444444",
   },
 
+  Refinput: {
+    backgroundColor: "#e1e1e1",
+  },
   input: {
     width: "100%",
   },
@@ -269,14 +275,14 @@ const getStatusBadge = (status, styles) => {
   return status || "";
 };
 
- const TbDetails = () => {
+const TbDetails = () => {
   const styles = useStyles();
-const {trialBalanceId} = useParams();
+  const { trialBalanceId } = useParams();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const { getTrialBalanceDetails } = useTrialBalance();
-const navigate = useNavigate()
+  const navigate = useNavigate()
   /**
    * ============================================================
    * GET TRIAL BALANCE DETAILS
@@ -301,8 +307,8 @@ const navigate = useNavigate()
 
       setError(
         err?.response?.data?.message ||
-          err?.message ||
-          "Failed to load trial balance details."
+        err?.message ||
+        "Failed to load trial balance details."
       );
     } finally {
       setLoading(false);
@@ -324,7 +330,7 @@ const navigate = useNavigate()
    * backend endpoints are provided.
    */
   const handleEditImport = (item) => {
-     navigate(`/trial-balances/${trialBalanceId}/journal/${item?.id || 0}`);
+    navigate(`/trial-balances/${trialBalanceId}/journal/${item?.id || 0}`);
     console.log("Edit Import:", item);
   };
 
@@ -342,7 +348,7 @@ const navigate = useNavigate()
     console.log("Edit Journal:", journal);
 
 
-       navigate(`/trial-balances/${trialBalanceId}/journal/${journal?.id || 0}`);
+    navigate(`/trial-balances/${trialBalanceId}/journal/${journal?.id || 0}`);
   };
 
   const handleDeleteJournal = (journal) => {
@@ -396,490 +402,476 @@ const navigate = useNavigate()
   const summary = data.summary || {};
 
   return (
-    <div className={styles.page}>
+    <div >
+      <div className={styles.page}>
 
-      {/* =====================================================
-          BREADCRUMB
-      ====================================================== */}
-      <div className={styles.breadcrumb}>
-        <span>Tax and Accounts</span>
-        <span>›</span>
-        <span>Ryan LLC</span>
-        <span>›</span>
-        <span>Trial Balances</span>
-        <span>›</span>
-
-        <span className={styles.breadcrumbActive}>
-          #{trialBalance.refNo}
-        </span>
-      </div>
-
-      {/* =====================================================
+        {/* =====================================================
           TITLE
       ====================================================== */}
-      <div className={styles.title}>
-        Trial Balance Detail: {trialBalance.refNo}
-      </div>
+        <div className={styles.title}>
+          Trial Balance Detail: {trialBalance.refNo}
+        </div>
 
-      {/* =====================================================
+        {/* =====================================================
           TOP DETAILS - FORMIK
       ====================================================== */}
-      <Formik
-        enableReinitialize
-        initialValues={{
-          refNo: trialBalance.refNo || "",
-          period:
-            period?.name ||
-            `${formatDate(trialBalance.periodStart)} - ${formatDate(
-              trialBalance.periodEnd
-            )}`,
-          description: trialBalance.description || "",
-        }}
-        onSubmit={() => {}}
-      >
-        {({ values }) => (
-          <Form>
-            <div className={styles.topForm}>
+        <Formik
+          enableReinitialize
+          initialValues={{
+            refNo: trialBalance.refNo || "",
+            period:
+              period?.name ||
+              `${formatDate(trialBalance.periodStart)} - ${formatDate(
+                trialBalance.periodEnd
+              )}`,
+            description: trialBalance.description || "",
+          }}
+          onSubmit={() => { }}
+        >
+          {({ values }) => (
+            <Form>
+              <div className={styles.topForm}>
 
-              <div className={styles.label}>
-                Ref. No.
+                <div className={styles.label}>
+                  Ref. No.
+                </div>
+
+                <Field>
+                  <Input
+                    className={styles.Refinput}
+                    value={values.refNo}
+                    readOnly
+                  />
+                </Field>
+
+                <div className={styles.label}>
+                  Period
+                </div>
+
+                <Field>
+                  <Input
+                    className={styles.input}
+                    value={values.period}
+                    readOnly
+                  />
+                </Field>
+
+                <div className={styles.label}>
+                  Description
+                </div>
+
+                <Field>
+                  <Input
+                    className={styles.input}
+                    value={values.description}
+                    readOnly
+                  />
+                </Field>
+
               </div>
+            </Form>
+          )}
+        </Formik>
 
-              <Field>
-                <Input
-                  className={styles.input}
-                  value={values.refNo}
-                  readOnly
-                />
-              </Field>
-
-              <div className={styles.label}>
-                Period
-              </div>
-
-              <Field>
-                <Input
-                  className={styles.input}
-                  value={values.period}
-                  readOnly
-                />
-              </Field>
-
-              <div className={styles.label}>
-                Description
-              </div>
-
-              <Field>
-                <Input
-                  className={styles.input}
-                  value={values.description}
-                  readOnly
-                />
-              </Field>
-
-            </div>
-          </Form>
-        )}
-      </Formik>
-
-      {/* =====================================================
+        {/* =====================================================
           IMPORTS
       ====================================================== */}
-      <div className={styles.sectionTitle}>
-        Import(s) pending
-      </div>
+        <div className={styles.sectionTitle}>
+          Import(s) pending
+        </div>
 
-      <div className={styles.tableWrapper}>
-        <Table className={styles.table}>
-          <TableHeader>
-            <TableRow>
-
-              <TableHeaderCell className={styles.header}>
-                Ref No
-              </TableHeaderCell>
-
-              <TableHeaderCell className={styles.header}>
-                Description
-              </TableHeaderCell>
-
-              <TableHeaderCell className={styles.header}>
-                File Name
-              </TableHeaderCell>
-
-              <TableHeaderCell className={styles.header}>
-                Status
-              </TableHeaderCell>
-
-              <TableHeaderCell className={styles.header}>
-                Imported On
-              </TableHeaderCell>
-
-              <TableHeaderCell className={styles.header}>
-                Action
-              </TableHeaderCell>
-
-            </TableRow>
-          </TableHeader>
-
-          <TableBody>
-            {imports.length === 0 ? (
+        <div className={styles.tableWrapper}>
+          <Table className={styles.table}>
+            <TableHeader>
               <TableRow>
-                <TableCell
-                  className={styles.empty}
-                  colSpan={6}
-                >
-                  No pending imports
-                </TableCell>
+
+                <TableHeaderCell className={styles.header}>
+                  Ref No
+                </TableHeaderCell>
+
+                <TableHeaderCell className={styles.header}>
+                  Description
+                </TableHeaderCell>
+
+                <TableHeaderCell className={styles.header}>
+                  File Name
+                </TableHeaderCell>
+
+                <TableHeaderCell className={styles.header}>
+                  Status
+                </TableHeaderCell>
+
+                <TableHeaderCell className={styles.header}>
+                  Imported On
+                </TableHeaderCell>
+
+                <TableHeaderCell className={styles.header}>
+                  Action
+                </TableHeaderCell>
+
               </TableRow>
-            ) : (
-              imports.map((item) => (
-                <TableRow key={item.id || item.refNo}>
+            </TableHeader>
 
-                  <TableCell className={styles.cell}>
-                    <TableCellLayout>
-                      <span className={styles.refNo}>
-                        {item.refNo}
-                      </span>
-                    </TableCellLayout>
+            <TableBody>
+              {imports.length === 0 ? (
+                <TableRow>
+                  <TableCell
+                    className={styles.empty}
+                    colSpan={6}
+                  >
+                    No pending imports
                   </TableCell>
-
-                  <TableCell className={styles.cell}>
-                    <TableCellLayout>
-                      <span className={styles.description}>
-                        {item.description}
-                      </span>
-                    </TableCellLayout>
-                  </TableCell>
-
-                  <TableCell className={styles.cell}>
-                    <TableCellLayout>
-                      {item.fileName}
-                    </TableCellLayout>
-                  </TableCell>
-
-                  <TableCell className={styles.cell}>
-                    <TableCellLayout>
-                      {getStatusBadge(item.status, styles)}
-                    </TableCellLayout>
-                  </TableCell>
-
-                  <TableCell className={styles.cell}>
-                    <TableCellLayout>
-                      {formatDate(item.importedOn)}
-                    </TableCellLayout>
-                  </TableCell>
-
-                  <TableCell className={styles.cell}>
-                    <div className={styles.actionCell}>
-
-                      <Tooltip content="Edit" relationship="label">
-                        <Button
-                          appearance="subtle"
-                          className={styles.actionButton}
-                          icon={<EditRegular />}
-                          onClick={() =>
-                            handleEditImport(item)
-                          }
-                        />
-                      </Tooltip>
-
-                      <Tooltip content="Delete" relationship="label">
-                        <Button
-                          appearance="subtle"
-                          className={styles.deleteButton}
-                          icon={<DeleteRegular />}
-                          onClick={() =>
-                            handleDeleteImport(item)
-                          }
-                        />
-                      </Tooltip>
-
-                    </div>
-                  </TableCell>
-
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
+              ) : (
+                imports.map((item) => (
+                  <TableRow key={item.id || item.refNo}>
 
-      {/* =====================================================
+                    <TableCell className={styles.cell}>
+                      <TableCellLayout>
+                        <span className={styles.refNo}>
+                          {item.refNo}
+                        </span>
+                      </TableCellLayout>
+                    </TableCell>
+
+                    <TableCell className={styles.cell}>
+                      <TableCellLayout>
+                        <span className={styles.description}>
+                          {item.description}
+                        </span>
+                      </TableCellLayout>
+                    </TableCell>
+
+                    <TableCell className={styles.cell}>
+                      <TableCellLayout>
+                        {item.fileName}
+                      </TableCellLayout>
+                    </TableCell>
+
+                    <TableCell className={styles.cell}>
+                      <TableCellLayout>
+                        {getStatusBadge(item.status, styles)}
+                      </TableCellLayout>
+                    </TableCell>
+
+                    <TableCell className={styles.cell}>
+                      <TableCellLayout>
+                        {formatDate(item.importedOn)}
+                      </TableCellLayout>
+                    </TableCell>
+
+                    <TableCell className={styles.cell}>
+                      <div className={styles.actionCell}>
+
+                        <Tooltip content="Edit" relationship="label">
+                          <Button
+                            appearance="subtle"
+                            className={styles.actionButton}
+                            icon={<EditRegular />}
+                            onClick={() =>
+                              handleEditImport(item)
+                            }
+                          />
+                        </Tooltip>
+
+                        <Tooltip content="Delete" relationship="label">
+                          <Button
+                            appearance="subtle"
+                            className={styles.deleteButton}
+                            icon={<DeleteRegular />}
+                            onClick={() =>
+                              handleDeleteImport(item)
+                            }
+                          />
+                        </Tooltip>
+
+                      </div>
+                    </TableCell>
+
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
+
+        {/* =====================================================
           JOURNALS
       ====================================================== */}
-      <div className={styles.sectionTitle}>
-        Journals
-      </div>
+        <div className={styles.sectionTitle}>
+          Journals
+        </div>
 
-      <div className={styles.tableWrapper}>
-        <Table className={styles.table}>
-          <TableHeader>
-            <TableRow>
-
-              <TableHeaderCell className={styles.header}>
-                Ref No
-              </TableHeaderCell>
-
-              <TableHeaderCell className={styles.header}>
-                Description
-              </TableHeaderCell>
-
-              <TableHeaderCell className={styles.header}>
-                Entries
-              </TableHeaderCell>
-
-              <TableHeaderCell className={styles.header}>
-                Journal Type
-              </TableHeaderCell>
-
-              <TableHeaderCell className={styles.header}>
-                Journal Status
-              </TableHeaderCell>
-
-              <TableHeaderCell className={styles.header}>
-                Import Type
-              </TableHeaderCell>
-
-              <TableHeaderCell className={styles.header}>
-                Status
-              </TableHeaderCell>
-
-              <TableHeaderCell className={styles.header}>
-                Created On
-              </TableHeaderCell>
-
-              <TableHeaderCell className={styles.header}>
-                Action
-              </TableHeaderCell>
-
-            </TableRow>
-          </TableHeader>
-
-          <TableBody>
-            {journals.length === 0 ? (
+        <div className={styles.tableWrapper}>
+          <Table className={styles.table}>
+            <TableHeader>
               <TableRow>
-                <TableCell
-                  className={styles.empty}
-                  colSpan={9}
-                >
-                  No journals found
-                </TableCell>
+
+                <TableHeaderCell className={styles.header}>
+                  Ref No
+                </TableHeaderCell>
+
+                <TableHeaderCell className={styles.header}>
+                  Description
+                </TableHeaderCell>
+
+                <TableHeaderCell className={styles.header}>
+                  Entries
+                </TableHeaderCell>
+
+                <TableHeaderCell className={styles.header}>
+                  Journal Type
+                </TableHeaderCell>
+
+                <TableHeaderCell className={styles.header}>
+                  Journal Status
+                </TableHeaderCell>
+
+                <TableHeaderCell className={styles.header}>
+                  Import Type
+                </TableHeaderCell>
+
+                <TableHeaderCell className={styles.header}>
+                  Status
+                </TableHeaderCell>
+
+                <TableHeaderCell className={styles.header}>
+                  Created On
+                </TableHeaderCell>
+
+                <TableHeaderCell className={styles.header}>
+                  Action
+                </TableHeaderCell>
+
               </TableRow>
-            ) : (
-              journals.map((journal) => (
-                <TableRow key={journal.id || journal.number}>
+            </TableHeader>
 
-                  {/* REF NO */}
-                  <TableCell className={styles.cell}>
-                    <TableCellLayout>
-                      <span
-                        className={styles.refNo}
-                        onClick={() =>
-                          handleEditJournal(journal)
-                        }
-                      >
-                        {journal.number}
-                      </span>
-                    </TableCellLayout>
+            <TableBody>
+              {journals.length === 0 ? (
+                <TableRow>
+                  <TableCell
+                    className={styles.empty}
+                    colSpan={9}
+                  >
+                    No journals found
                   </TableCell>
+                </TableRow>
+              ) : (
+                journals.map((journal) => (
+                  <TableRow key={journal.id || journal.number}>
 
-                  {/* DESCRIPTION */}
-                  <TableCell className={styles.cell}>
-                    <TableCellLayout>
-                      <span className={styles.description}>
-                        {journal.description}
-                      </span>
-                    </TableCellLayout>
-                  </TableCell>
-
-                  {/* ENTRIES */}
-                  <TableCell className={styles.cell}>
-                    <TableCellLayout>
-                      {journal.itemsCount ?? 0}
-                    </TableCellLayout>
-                  </TableCell>
-
-                  {/* JOURNAL TYPE */}
-                  <TableCell className={styles.cell}>
-                    <TableCellLayout>
-                      {journal.journalType}
-                    </TableCellLayout>
-                  </TableCell>
-
-                  {/* JOURNAL STATUS */}
-                  <TableCell className={styles.cell}>
-                    <TableCellLayout>
-                      {getStatusBadge(
-                        journal.journalStatus,
-                        styles
-                      )}
-                    </TableCellLayout>
-                  </TableCell>
-
-                  {/* IMPORT TYPE */}
-                  <TableCell className={styles.cell}>
-                    <TableCellLayout>
-                      {journal.importType}
-                    </TableCellLayout>
-                  </TableCell>
-
-                  {/* STATUS */}
-                  <TableCell className={styles.cell}>
-                    <TableCellLayout>
-                      {journal.status ? (
-                        <CheckmarkRegular
-                          className={styles.successIcon}
-                        />
-                      ) : (
-                        ""
-                      )}
-                    </TableCellLayout>
-                  </TableCell>
-
-                  {/* CREATED ON */}
-                  <TableCell className={styles.cell}>
-                    <TableCellLayout>
-                      {formatDate(journal.createdOn)}
-                    </TableCellLayout>
-                  </TableCell>
-
-                  {/* ACTIONS */}
-                  <TableCell className={styles.cell}>
-                    <div className={styles.actionCell}>
-
-                      {/* EDIT */}
-                      <Tooltip content="Edit" relationship="label">
-                        <Button
-                          appearance="subtle"
-                          className={styles.actionButton}
-                          icon={<EditRegular />}
-                          disabled={
-                            journal.action?.edit === false
-                          }
+                    {/* REF NO */}
+                    <TableCell className={styles.cell}>
+                      <TableCellLayout>
+                        <span
+                          className={styles.refNo}
                           onClick={() =>
                             handleEditJournal(journal)
                           }
-                        />
-                      </Tooltip>
+                        >
+                          {journal.number}
+                        </span>
+                      </TableCellLayout>
+                    </TableCell>
 
-                      {/* DELETE */}
-                      <Tooltip content="Delete" relationship="label">
-                        <Button
-                          appearance="subtle"
-                          className={styles.deleteButton}
-                          icon={<DeleteRegular />}
-                          disabled={
-                            journal.action?.delete === false
-                          }
-                          onClick={() =>
-                            handleDeleteJournal(journal)
-                          }
-                        />
-                      </Tooltip>
+                    {/* DESCRIPTION */}
+                    <TableCell className={styles.cell}>
+                      <TableCellLayout>
+                        <span className={styles.description}>
+                          {journal.description}
+                        </span>
+                      </TableCellLayout>
+                    </TableCell>
 
-                      {/* UNPOST */}
-                      <Tooltip content="Unpost" relationship="label">
-                        <Button
-                          appearance="subtle"
-                          className={styles.actionButton}
-                          icon={<ArrowUndoRegular />}
-                          disabled={
-                            journal.action?.unpost === false
-                          }
-                          onClick={() =>
-                            handleUnpostJournal(journal)
-                          }
-                        />
-                      </Tooltip>
+                    {/* ENTRIES */}
+                    <TableCell className={styles.cell}>
+                      <TableCellLayout>
+                        {journal.itemsCount ?? 0}
+                      </TableCellLayout>
+                    </TableCell>
 
-                      {/* DOWNLOAD */}
-                      <Tooltip content="Download" relationship="label">
-                        <Button
-                          appearance="subtle"
-                          className={styles.actionButton}
-                          icon={<ArrowDownloadRegular />}
-                          disabled={
-                            journal.action?.download === false
-                          }
-                          onClick={() =>
-                            handleDownloadJournal(journal)
-                          }
-                        />
-                      </Tooltip>
+                    {/* JOURNAL TYPE */}
+                    <TableCell className={styles.cell}>
+                      <TableCellLayout>
+                        {journal.journalType}
+                      </TableCellLayout>
+                    </TableCell>
 
-                      {/* ATTACHMENT */}
-                      <Tooltip
-                        content="Add attachment"
-                        relationship="label"
-                      >
-                        <Button
-                          appearance="subtle"
-                          className={styles.actionButton}
-                          icon={<AttachRegular />}
-                          disabled={
-                            journal.action?.addAttachment === false
-                          }
-                          onClick={() =>
-                            handleAttachment(journal)
-                          }
-                        />
-                      </Tooltip>
+                    {/* JOURNAL STATUS */}
+                    <TableCell className={styles.cell}>
+                      <TableCellLayout>
+                        {getStatusBadge(
+                          journal.journalStatus,
+                          styles
+                        )}
+                      </TableCellLayout>
+                    </TableCell>
 
-                    </div>
-                  </TableCell>
+                    {/* IMPORT TYPE */}
+                    <TableCell className={styles.cell}>
+                      <TableCellLayout>
+                        {journal.importType}
+                      </TableCellLayout>
+                    </TableCell>
 
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
+                    {/* STATUS */}
+                    <TableCell className={styles.cell}>
+                      <TableCellLayout>
+                        {journal.status ? (
+                          <CheckmarkRegular
+                            className={styles.successIcon}
+                          />
+                        ) : (
+                          ""
+                        )}
+                      </TableCellLayout>
+                    </TableCell>
 
-      {/* =====================================================
+                    {/* CREATED ON */}
+                    <TableCell className={styles.cell}>
+                      <TableCellLayout>
+                        {formatDate(journal.createdOn)}
+                      </TableCellLayout>
+                    </TableCell>
+
+                    {/* ACTIONS */}
+                    <TableCell className={styles.cell}>
+                      <div className={styles.actionCell}>
+
+                        {/* EDIT */}
+                        <Tooltip content="Edit" relationship="label">
+                          <Button
+                            appearance="subtle"
+                            className={styles.actionButton}
+                            icon={<EditRegular />}
+                            disabled={
+                              journal.action?.edit === false
+                            }
+                            onClick={() =>
+                              handleEditJournal(journal)
+                            }
+                          />
+                        </Tooltip>
+
+                        {/* DELETE */}
+                        <Tooltip content="Delete" relationship="label">
+                          <Button
+                            appearance="subtle"
+                            className={styles.deleteButton}
+                            icon={<DeleteRegular />}
+                            disabled={
+                              journal.action?.delete === false
+                            }
+                            onClick={() =>
+                              handleDeleteJournal(journal)
+                            }
+                          />
+                        </Tooltip>
+
+                        {/* UNPOST */}
+                        <Tooltip content="Unpost" relationship="label">
+                          <Button
+                            appearance="subtle"
+                            className={styles.actionButton}
+                            icon={<ArrowUndoRegular />}
+                            disabled={
+                              journal.action?.unpost === false
+                            }
+                            onClick={() =>
+                              handleUnpostJournal(journal)
+                            }
+                          />
+                        </Tooltip>
+
+                        {/* DOWNLOAD */}
+                        <Tooltip content="Download" relationship="label">
+                          <Button
+                            appearance="subtle"
+                            className={styles.actionButton}
+                            icon={<ArrowDownloadRegular />}
+                            disabled={
+                              journal.action?.download === false
+                            }
+                            onClick={() =>
+                              handleDownloadJournal(journal)
+                            }
+                          />
+                        </Tooltip>
+
+                        {/* ATTACHMENT */}
+                        <Tooltip
+                          content="Add attachment"
+                          relationship="label"
+                        >
+                          <Button
+                            appearance="subtle"
+                            className={styles.actionButton}
+                            icon={<AttachRegular />}
+                            disabled={
+                              journal.action?.addAttachment === false
+                            }
+                            onClick={() =>
+                              handleAttachment(journal)
+                            }
+                          />
+                        </Tooltip>
+
+                      </div>
+                    </TableCell>
+
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
+
+        {/* =====================================================
           SUMMARY
       ====================================================== */}
-      <div className={styles.summary}>
+        <div className={styles.summary}>
 
-        <div className={styles.summaryItem}>
-          <span className={styles.summaryLabel}>
-            Total Debit
-          </span>
+          <div className={styles.summaryItem}>
+            <span className={styles.summaryLabel}>
+              Total Debit
+            </span>
 
-          <span className={styles.summaryValue}>
-            {Number(summary.totalDebit || 0).toLocaleString()}
-          </span>
+            <span className={styles.summaryValue}>
+              {Number(summary.totalDebit || 0).toLocaleString()}
+            </span>
+          </div>
+
+          <div className={styles.summaryItem}>
+            <span className={styles.summaryLabel}>
+              Total Credit
+            </span>
+
+            <span className={styles.summaryValue}>
+              {Number(summary.totalCredit || 0).toLocaleString()}
+            </span>
+          </div>
+
+          <div className={styles.summaryItem}>
+            <span className={styles.summaryLabel}>
+              Difference
+            </span>
+
+            <span className={styles.summaryValue}>
+              {Number(summary.difference || 0).toLocaleString()}
+            </span>
+          </div>
+
+          <div className={styles.summaryItem}>
+            <span className={styles.summaryLabel}>
+              Balance Status
+            </span>
+
+            <span className={styles.summaryValue}>
+              {summary.status || ""}
+            </span>
+          </div>
+
         </div>
-
-        <div className={styles.summaryItem}>
-          <span className={styles.summaryLabel}>
-            Total Credit
-          </span>
-
-          <span className={styles.summaryValue}>
-            {Number(summary.totalCredit || 0).toLocaleString()}
-          </span>
-        </div>
-
-        <div className={styles.summaryItem}>
-          <span className={styles.summaryLabel}>
-            Difference
-          </span>
-
-          <span className={styles.summaryValue}>
-            {Number(summary.difference || 0).toLocaleString()}
-          </span>
-        </div>
-
-        <div className={styles.summaryItem}>
-          <span className={styles.summaryLabel}>
-            Balance Status
-          </span>
-
-          <span className={styles.summaryValue}>
-            {summary.status || ""}
-          </span>
-        </div>
-
       </div>
     </div>
   );

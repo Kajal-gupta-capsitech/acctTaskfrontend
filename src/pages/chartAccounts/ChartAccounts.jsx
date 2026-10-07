@@ -250,7 +250,7 @@ const ChartAccounts = () => {
   return (
     <div>
       {/* Breadcrumb */}
-      <BreadCrumbs />
+      {/* <BreadCrumbs /> */}
 
       {/* Add button */}
       <div className={styles.buttonContainer}>

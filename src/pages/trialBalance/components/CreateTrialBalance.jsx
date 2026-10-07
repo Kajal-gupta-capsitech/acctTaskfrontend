@@ -49,7 +49,6 @@ const useStyles = makeStyles({
   page: {
     width: "100%",
     boxSizing: "border-box",
-    padding: "0 28px 28px",
 
     "@media (max-width: 700px)": {
       padding: "0 16px 20px",
@@ -57,9 +56,10 @@ const useStyles = makeStyles({
   },
 
   content: {
-    width: "100%",
-    maxWidth: "820px",
+    // width: "100%",
+    // maxWidth: "820px",
     margin: "0 auto",
+    padding: "0 10px 10px",
 
     "@media (max-width: 700px)": {
       maxWidth: "100%",
@@ -95,15 +95,20 @@ const useStyles = makeStyles({
 
   topForm: {
     width: "100%",
+
     maxWidth: "760px",
   },
 
   field: {
     marginBottom: "12px",
+    display: "grid",
+    gridTemplateColumns: "150px max-content",
+    gap: "10px",
+    // flexDirection: "row",
   },
 
   refInput: {
-    width: "250px",
+    // width: "250px",
 
     "@media (max-width: 700px)": {
       width: "100%",
@@ -111,8 +116,8 @@ const useStyles = makeStyles({
   },
 
   periodDropdown: {
-    width: "375px",
-    maxWidth: "100%",
+    // width: "375px",
+    // maxWidth: "100%",
 
     "@media (max-width: 700px)": {
       width: "100%",
@@ -120,8 +125,8 @@ const useStyles = makeStyles({
   },
 
   journalDropdown: {
-    width: "375px",
-    maxWidth: "100%",
+    // width: "375px",
+    // maxWidth: "100%",
 
     "@media (max-width: 700px)": {
       width: "100%",
@@ -129,7 +134,7 @@ const useStyles = makeStyles({
   },
 
   description: {
-    width: "100%",
+    minWidth: "60vw",
   },
 
   attachment: {
@@ -147,7 +152,7 @@ const useStyles = makeStyles({
   },
 
   attachmentInput: {
-    display: "none",
+    display: "none", 
   },
 
   accountButtonContainer: {
@@ -1388,7 +1393,6 @@ const CreateTrialBalance = () => {
   if (loading) {
     return (
       <div className={styles.page}>
-        <BreadCrumbs />
 
         <div
           style={{
@@ -1408,7 +1412,7 @@ const CreateTrialBalance = () => {
    * --------------------------------------------------------- */
   return (
     <div className={styles.page}>
-      <BreadCrumbs />
+      {/* <BreadCrumbs /> */}
 
       <div className={styles.content}>
         {/* HEADER */}

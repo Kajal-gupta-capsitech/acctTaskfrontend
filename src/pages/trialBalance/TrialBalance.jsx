@@ -962,7 +962,7 @@ const TrialBalance = () => {
     return (
       <div>
 
-        <BreadCrumbs />
+        {/* <BreadCrumbs /> */}
 
         <p>
           Loading trial balances...
@@ -978,7 +978,7 @@ const TrialBalance = () => {
     return (
       <div>
 
-        <BreadCrumbs />
+        {/* <BreadCrumbs /> */}
 
         <p>
           Failed to load trial balances.
@@ -1004,7 +1004,7 @@ const TrialBalance = () => {
   return (
     <div>
 
-      <BreadCrumbs />
+      {/* <BreadCrumbs /> */}
 
 
       {/* ========================================================= */}

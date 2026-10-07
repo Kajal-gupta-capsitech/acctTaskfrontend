@@ -18,7 +18,7 @@ const useStyles = makeStyles({
     overflow: "auto",
   },
   mainContainer:{
-    border: "1px solid blue",
+    // border: "1px solid blue",
     // width: "80%%",
     height: "100%",
     display: "flex",

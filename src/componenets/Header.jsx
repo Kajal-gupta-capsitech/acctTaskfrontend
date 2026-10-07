@@ -6,6 +6,7 @@ import {
 
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useState } from "react";
+import { BreadCrumbs } from "./breadCrumbs/BreadCrumbs";
 
 const useStyles = makeStyles({
     nav: {
@@ -38,6 +39,8 @@ const Header = () => {
             <div className={styles.header}>
                 <p className={styles.title}> Acting Office 2</p>
             </div>
+        <BreadCrumbs />
+
         </>
     );
 };

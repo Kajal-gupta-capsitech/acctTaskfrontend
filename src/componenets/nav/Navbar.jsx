@@ -25,9 +25,28 @@ import { NavLink, useLocation, useNavigate } from "react-router-dom";
 
 const useStyles = makeStyles({
   nav: {
-    minWidth: "260px",
-  },
+    // border:"10px solid red",
+    minWidth: "220px",
+    backgroundColor: "#ffffff",
+    // margin:"0px",
+    borderRight:"2px solid #e9e5e5ff",
 
+
+  },
+  hamburger:{
+    paddingLeft:"5px",
+    // marginLeft:"0px",
+    // marginRight:"0px",
+    // position:"absolute",
+    // left:"0px",
+    // top:"0px",
+  },
+acc:{
+    backgroundColor: "#ffffff",
+    paddingLeft:"0px",
+    margin:"0px"
+
+},
   collapsedNav: {
     width: "60px",
     minWidth: "60px",
@@ -100,24 +119,28 @@ const Navbar = () => {
           selectedValue={location.pathname}
           className={styles.nav}
         >
-          <NavDrawerHeader>
+          <NavDrawerHeader 
+                className={styles.hamburger}
+                >
             <Tooltip
               content="Collapse Navigation"
               relationship="label"
             >
               <Hamburger
+                className={styles.hamburger}
                 onClick={() => setIsOpen(false)}
               />
             </Tooltip>
           </NavDrawerHeader>
 
           <NavDrawerBody>
-
-            <AppItem>
+{/* 
+            <AppItem className={styles.acc}>
               ACCOUNTS
-            </AppItem>
+            </AppItem> */}
 
             <NavItem
+            className={styles.acc}
               value="/chart-accounts"
               icon={<DashboardIcon />}
               onClick={() => navigate("/chart-accounts")}
@@ -126,6 +149,7 @@ const Navbar = () => {
             </NavItem>
 
             <NavItem
+            className={styles.acc}
               value="/accounting-period"
               icon={<AccountsIcon />}
               onClick={() => navigate("/accounting-period")}
@@ -134,6 +158,7 @@ const Navbar = () => {
             </NavItem>
 
             <NavItem
+            className={styles.acc}
               value="/trial-balances"
               icon={<ReportsIcon />}
               onClick={() => navigate("/trial-balances")}
