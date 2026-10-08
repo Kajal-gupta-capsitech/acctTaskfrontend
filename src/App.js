@@ -7,6 +7,7 @@ import ChartAccounts from "./pages/chartAccounts/ChartAccounts";
 import AccountingPeriod from "./pages/accounts/Accounts";
 import CreateTrialBalance from "./pages/trialBalance/components/CreateTrialBalance";
 import TbDetails from "./pages/trialBalance/components/TrialBalanceDetailsPage";
+import ImportTablePage from "./componenets/importsPage";
 
 const App = () => {
   return (
@@ -44,6 +45,11 @@ const App = () => {
             // path="trial-balances/:trialBalanceId/journal/:journalId"
             path="trial-balances/:trialBalanceId/journal/:journalId"
             element={<CreateTrialBalance />}
+          />
+            <Route
+            // path="trial-balances/:trialBalanceId/journal/:journalId"
+            path="trial-balances/:trialBalanceId/imports/:importsId"
+            element={<ImportTablePage />}
           />
         </Route>
       </Routes>

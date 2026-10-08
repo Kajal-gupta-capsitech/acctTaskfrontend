@@ -180,9 +180,48 @@ const getJournalById = async (
         : undefined
     );
 
-    await getTrialBalances();
+    
+    // await getTrialBalances();
 
-    return response.data;
+    return response.data.result;
+  } catch (err) {
+    console.error(
+      "Error creating trial balance:",
+      err
+    );
+
+    setError(err);
+
+    throw err;
+  }
+};
+
+
+  const createTrialBalance = async (
+  trialBalanceData
+) => {
+  try {
+    setError(null);
+
+    const isFormData =
+      trialBalanceData instanceof FormData;
+
+    const response = await api.post(
+      "/TrialBalances",
+      trialBalanceData,
+      isFormData
+        ? {
+            headers: {
+              "Content-Type": "multipart/form-data",
+            },
+          }
+        : undefined
+    );
+
+    
+    // await getTrialBalances();
+
+    return response.data.result;
   } catch (err) {
     console.error(
       "Error creating trial balance:",

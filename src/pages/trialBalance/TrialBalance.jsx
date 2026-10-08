@@ -321,7 +321,7 @@ const TrialBalance = () => {
 
 
     return trialBalances.map((trialBalance, index) => {
-        
+
       const periodFrom =
         trialBalance.accountingPeriod?.periodFrom
         || trialBalance?.periodStart
@@ -385,7 +385,7 @@ const TrialBalance = () => {
 
       return {
         sNo: index + 1,
-        name : trialBalance.refNo,
+        name: trialBalance.refNo,
         refNo: (
           <span
             style={{
@@ -929,15 +929,29 @@ const TrialBalance = () => {
         createdRes?.message || "Trial balance created successfully.";
       showSuccess(successMessage);
 
-      const createdTrialBalance = createdRes?.result || createdRes;
+      const createdTrialBalance = createdRes;
       const trialBalanceId = createdTrialBalance?.refNo;
-      console.log("createdTrialBalance", createdTrialBalance)
+      const lastImportId = createdTrialBalance?.importIds?.[createdTrialBalance?.importIds.length - 1];
+      console.log("createdTrialBalance", createdTrialBalance);
+      // return;
       if (!trialBalanceId) {
         throw new Error("Trial Balance ID was not returned by the API.");
       }
 
       setIsDrawerOpen(false);
+      if (data.importMode === "csv") {
+        navigate(`/trial-balances/${trialBalanceId}/imports/${lastImportId}`, {
+          state: {
+            trialBalanceData: createdTrialBalance,
+            importMode: data.importMode,
+            csvRows: data.importMode === "csv" ? csvRows : [],
+            drawerFormData: data,
+            file: data.file,
+          },
+        });
 
+        return;
+      }
       navigate(`/trial-balances/${trialBalanceId}/journal/0`, {
         state: {
           trialBalanceData: createdTrialBalance,
@@ -961,8 +975,6 @@ const TrialBalance = () => {
   if (loading) {
     return (
       <div>
-
-        {/* <BreadCrumbs /> */}
 
         <p>
           Loading trial balances...
