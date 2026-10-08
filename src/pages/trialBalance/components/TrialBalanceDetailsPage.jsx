@@ -330,7 +330,7 @@ const TbDetails = () => {
    * backend endpoints are provided.
    */
   const handleEditImport = (item) => {
-    navigate(`/trial-balances/${trialBalanceId}/journal/${item?.id || 0}`);
+    navigate(`/trial-balances/${trialBalanceId}/imports/${item?.id || 0}`);
     console.log("Edit Import:", item);
   };
 

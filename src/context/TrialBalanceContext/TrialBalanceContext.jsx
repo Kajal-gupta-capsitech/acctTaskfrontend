@@ -40,31 +40,35 @@ export const TrialBalanceProvider = ({ children }) => {
     }
   };
 
-   const getTrialBalanceDetails = async (id) => {
-  try {
-    const response = await api.get(`/TrialBalances/${id}/details`);
+  const getTrialBalanceDetails = async (id) => {
+    try {
+      const response = await api.get(`/TrialBalances/${id}/details`);
 
-    return response.data;
-  } catch (error) {
-    console.error("Error fetching trial balance details:", error);
-    throw error;
-  }
-};
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching trial balance details:", error);
+      throw error;
+    }
+  };
+
   // ==========================================
-  // GET BY ID
+  // GET JOURNAL BY ID
   // ==========================================
-  const getTrialBalanceById = async (id) => {
+  const getJournalById = async (
+    refNo,
+    journalId
+  ) => {
     try {
       setError(null);
 
       const response = await api.get(
-        `/TrialBalances/${id}`
+        `/TrialBalances/${refNo}/journals/${journalId}`
       );
 
       return response.data;
     } catch (err) {
       console.error(
-        "Error fetching trial balance:",
+        "Error fetching journal:",
         err
       );
 
@@ -75,32 +79,29 @@ export const TrialBalanceProvider = ({ children }) => {
   };
 
 
-  // ==========================================
-// GET JOURNAL BY ID
-// ==========================================
-const getJournalById = async (
-  refNo,
-  journalId
-) => {
-  try {
-    setError(null);
+  const getImportsById = async (
+    refNo,
+    importId
+  ) => {
+    try {
+      setError(null);
 
-    const response = await api.get(
-      `/TrialBalances/${refNo}/journals/${journalId}`
-    );
+      const response = await api.get(
+        `/TrialBalances/${refNo}/imports/${importId}`
+      );
 
-    return response.data;
-  } catch (err) {
-    console.error(
-      "Error fetching journal:",
-      err
-    );
+      return response.data;
+    } catch (err) {
+      console.error(
+        "Error fetching journal:",
+        err
+      );
 
-    setError(err);
+      setError(err);
 
-    throw err;
-  }
-};
+      throw err;
+    }
+  };
   // ==========================================
   // CREATE
   // ==========================================
@@ -132,144 +133,143 @@ const getJournalById = async (
   // };
 
 
-// const createTrialBalance = async (
-//   trialBalanceData
-// ) => {
-//   try {
-//     setError(null);
-// console.log("Creating trial balance with data:", trialBalanceData);
-//     const response = await api.post(
-//       "/TrialBalances",
-//       trialBalanceData
-//     );
+  // const createTrialBalance = async (
+  //   trialBalanceData
+  // ) => {
+  //   try {
+  //     setError(null);
+  // console.log("Creating trial balance with data:", trialBalanceData);
+  //     const response = await api.post(
+  //       "/TrialBalances",
+  //       trialBalanceData
+  //     );
 
-//     await getTrialBalances();
+  //     await getTrialBalances();
 
-//     return response.data;
-//   } catch (err) {
-//     console.error(
-//       "Error creating trial balance:",
-//       err
-//     );
+  //     return response.data;
+  //   } catch (err) {
+  //     console.error(
+  //       "Error creating trial balance:",
+  //       err
+  //     );
 
-//     setError(err);
+  //     setError(err);
 
-//     throw err;
-//   }
-// };
+  //     throw err;
+  //   }
+  // };
 
 
   const createTrialBalance = async (
-  trialBalanceData
-) => {
-  try {
-    setError(null);
+    trialBalanceData
+  ) => {
+    try {
+      setError(null);
 
-    const isFormData =
-      trialBalanceData instanceof FormData;
+      const isFormData =
+        trialBalanceData instanceof FormData;
 
-    const response = await api.post(
-      "/TrialBalances",
-      trialBalanceData,
-      isFormData
-        ? {
+      const response = await api.post(
+        "/TrialBalances",
+        trialBalanceData,
+        isFormData
+          ? {
             headers: {
               "Content-Type": "multipart/form-data",
             },
           }
-        : undefined
-    );
-
-    
-    // await getTrialBalances();
-
-    return response.data.result;
-  } catch (err) {
-    console.error(
-      "Error creating trial balance:",
-      err
-    );
-
-    setError(err);
-
-    throw err;
-  }
-};
+          : undefined
+      );
 
 
-  const createTrialBalance = async (
-  trialBalanceData
-) => {
-  try {
-    setError(null);
+      // await getTrialBalances();
 
-    const isFormData =
-      trialBalanceData instanceof FormData;
+      return response.data.result;
+    } catch (err) {
+      console.error(
+        "Error creating trial balance:",
+        err
+      );
 
-    const response = await api.post(
-      "/TrialBalances",
-      trialBalanceData,
-      isFormData
-        ? {
+      setError(err);
+
+      throw err;
+    }
+  };
+
+  const importTrialBalancebyId = async (
+    trialBalanceData
+  ) => {
+    try {
+      setError(null);
+
+      const isFormData =
+        trialBalanceData instanceof FormData;
+
+      const response = await api.post(
+        "/TrialBalances",
+        trialBalanceData,
+        isFormData
+          ? {
             headers: {
               "Content-Type": "multipart/form-data",
             },
           }
-        : undefined
-    );
-
-    
-    // await getTrialBalances();
-
-    return response.data.result;
-  } catch (err) {
-    console.error(
-      "Error creating trial balance:",
-      err
-    );
-
-    setError(err);
-
-    throw err;
-  }
-};
+          : undefined
+      );
 
 
-// ==========================================
-// IMPORT CSV
-// ==========================================
-const importTrialBalance = async (
-  refNo,
-  importData
-) => {
-  try {
-    setError(null);
+      // await getTrialBalances();
 
-    const response = await api.post(
-      `/TrialBalances/${refNo}/imports`,
-      importData
-    );
+      return response.data.result;
+    } catch (err) {
+      console.error(
+        "Error creating trial balance:",
+        err
+      );
 
-    // Refresh Trial Balance list
-    await getTrialBalances();
+      setError(err);
 
-    return response.data;
-  } catch (err) {
-    console.error(
-      "Error importing trial balance:",
-      err
-    );
+      throw err;
+    }
+  };
 
-    setError(err);
 
-    throw err;
-  }
-};
+  // ==========================================
+  // IMPORT CSV
+  // ==========================================
+  const importTrialBalance = async (
+    refNo,
+    importData
+  ) => {
+    try {
+      setError(null);
+
+      const response = await api.post(
+        `/TrialBalances/${refNo}/imports`,
+        importData
+      );
+
+      // Refresh Trial Balance list
+      await getTrialBalances();
+
+      return response.data;
+    } catch (err) {
+      console.error(
+        "Error importing trial balance:",
+        err
+      );
+
+      setError(err);
+
+      throw err;
+    }
+  };
   // ==========================================
   // UPDATE / PATCH
   // ==========================================
- 
- 
+
+
   const updateTrialBalance = async (
     id,
     trialBalanceData
@@ -327,55 +327,55 @@ const importTrialBalance = async (
   };
 
   // ==========================================
-// CREATE / UPDATE JOURNAL
-// ==========================================
-const createOrUpdateJournal = async (
-  refNo,
-  journalId,
-  journalData,
-  attachment = null
-) => {
-  try {
-    setError(null);
+  // CREATE / UPDATE JOURNAL
+  // ==========================================
+  const createOrUpdateJournal = async (
+    refNo,
+    journalId,
+    journalData,
+    attachment = null
+  ) => {
+    try {
+      setError(null);
 
-    const formData = new FormData();
+      const formData = new FormData();
 
-    // Journal object must be sent as JSON string
-    formData.append(
-      "journal",
-      JSON.stringify(journalData)
-    );
-
-    // Attachment is optional
-    if (attachment) {
+      // Journal object must be sent as JSON string
       formData.append(
-        "attachment",
-        attachment
+        "journal",
+        JSON.stringify(journalData)
       );
-    }
 
-    const response = await api.post(
-      `/TrialBalances/${refNo}/journals/${journalId}`,
-      formData,
-      {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
+      // Attachment is optional
+      if (attachment) {
+        formData.append(
+          "attachment",
+          attachment
+        );
       }
-    );
 
-    return response.data;
-  } catch (err) {
-    console.error(
-      "Error creating/updating journal:",
-      err
-    );
+      const response = await api.post(
+        `/TrialBalances/${refNo}/journals/${journalId}`,
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
 
-    setError(err);
+      return response.data;
+    } catch (err) {
+      console.error(
+        "Error creating/updating journal:",
+        err
+      );
 
-    throw err;
-  }
-};
+      setError(err);
+
+      throw err;
+    }
+  };
 
 
   return (
@@ -388,16 +388,18 @@ const createOrUpdateJournal = async (
 
         // CRUD
         getTrialBalances,
-        getTrialBalanceById,
         createTrialBalance,
-        importTrialBalance,
         updateTrialBalance,
         deleteTrialBalance,
         getJournalById,
         getTrialBalanceDetails,
 
- // Journal
-          createOrUpdateJournal,
+        // Journal
+        createOrUpdateJournal,
+
+        importTrialBalancebyId,
+        getImportsById,
+
       }}
     >
       {children}

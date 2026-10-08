@@ -290,7 +290,7 @@ const ImportTablePage = () => {
   const styles = useStyles();
   const navigate = useNavigate();
   const location = useLocation();
-  const { trialBalanceId, journalId } = useParams();
+  const { trialBalanceId, importsId } = useParams();
 
   const csvImportMode = location.state?.importMode === "csv";
 
@@ -298,7 +298,7 @@ const ImportTablePage = () => {
 
   const { showSuccess, showError } = useToast();
 
-  const { getTrialBalanceById, importTrialBalance, createOrUpdateJournal, getJournalById } = useTrialBalance();
+  const { getTrialBalanceById, importTrialBalance, createOrUpdateJournal, getImportsById } = useTrialBalance();
 
   const { chartAccounts, getChartAccounts } = useChartAccount();
 
@@ -313,6 +313,7 @@ const ImportTablePage = () => {
   const [saving, setSaving] = React.useState(false);
   const [importing, setImporting] = React.useState(false);
   const [importCompleted, setImportCompleted] = React.useState(false);
+  const [trialBalanceResult, setTrialBalanceResult] = React.useState(null);
 
   const isReadOnlyCsvMode = csvImportMode && !importCompleted;
 
@@ -348,7 +349,7 @@ const ImportTablePage = () => {
         }
 
         const [trialBalanceRes, chartAccountsRes] = await Promise.all([
-          getJournalById(trialBalanceId, journalId),
+          getImportsById(trialBalanceId, importsId),
           getChartAccounts(),
           getAccountingPeriods(),
         ]);

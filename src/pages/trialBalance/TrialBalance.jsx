@@ -872,6 +872,7 @@ const TrialBalance = () => {
   };
 
   const handleSubmit = async (data) => {
+
     try {
       console.log("handleSubmit Data:", data);
 
@@ -932,13 +933,15 @@ const TrialBalance = () => {
       const createdTrialBalance = createdRes;
       const trialBalanceId = createdTrialBalance?.refNo;
       const lastImportId = createdTrialBalance?.importIds?.[createdTrialBalance?.importIds.length - 1];
-      console.log("createdTrialBalance", createdTrialBalance);
+      console.log("createdTrialBalance", createdTrialBalance, lastImportId);
       // return;
       if (!trialBalanceId) {
         throw new Error("Trial Balance ID was not returned by the API.");
       }
 
       setIsDrawerOpen(false);
+      // console.log("data. import mode ", data.importMode);
+      // return;
       if (data.importMode === "csv") {
         navigate(`/trial-balances/${trialBalanceId}/imports/${lastImportId}`, {
           state: {
@@ -950,9 +953,9 @@ const TrialBalance = () => {
           },
         });
 
-        return;
-      }
-      navigate(`/trial-balances/${trialBalanceId}/journal/0`, {
+        // return;
+      }else{
+ navigate(`/trial-balances/${trialBalanceId}/journal/0`, {
         state: {
           trialBalanceData: createdTrialBalance,
           importMode: data.importMode,
@@ -961,6 +964,8 @@ const TrialBalance = () => {
           file: data.file,
         },
       });
+      }
+     
 
     } catch (err) {
       console.error(
