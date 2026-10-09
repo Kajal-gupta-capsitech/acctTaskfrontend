@@ -7,7 +7,7 @@ import ChartAccounts from "./pages/chartAccounts/ChartAccounts";
 import AccountingPeriod from "./pages/accounts/Accounts";
 import CreateTrialBalance from "./pages/trialBalance/components/CreateTrialBalance";
 import TbDetails from "./pages/trialBalance/components/TrialBalanceDetailsPage";
-import ImportTablePage from "./componenets/importsPage";
+import ImportTablePage from "./pages/Imports/importsPage";
 
 const App = () => {
   return (

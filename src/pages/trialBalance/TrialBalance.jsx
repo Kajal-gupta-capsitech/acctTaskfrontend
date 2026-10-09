@@ -955,7 +955,7 @@ const TrialBalance = () => {
 
         // return;
       }else{
- navigate(`/trial-balances/${trialBalanceId}/journal/0`, {
+      navigate(`/trial-balances/${trialBalanceId}/journal/0`, {
         state: {
           trialBalanceData: createdTrialBalance,
           importMode: data.importMode,
@@ -992,6 +992,7 @@ const TrialBalance = () => {
 
 
   if (error) {
+    //  showError(error);
     return (
       <div>
 
@@ -1009,6 +1010,8 @@ const TrialBalance = () => {
 
       </div>
     );
+ 
+ 
   }
 
 

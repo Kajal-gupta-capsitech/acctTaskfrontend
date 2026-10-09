@@ -894,11 +894,6 @@ const CreateTrialBalance = () => {
 
       // ============================================================
       // CSV HEADERS
-      // ============================================================
-      //
-      // These are the headers of the CSV being imported.
-      // They are not Chart Account values.
-      // ============================================================
 
       const headers = [
         "Account Code",
@@ -1078,13 +1073,14 @@ const CreateTrialBalance = () => {
   // };
 
 
-  const handleSave = async () => {
+  const handleSave = async (status) => {
     if (!trialBalanceId) {
       showError("Trial Balance ID is missing.");
       return;
     }
 
     // Prevent saving an unbalanced trial balance
+    if(status !== "save draft")
     if (!isBalanced) {
       showError(
         `Amount is not balanced. Debit and Credit must be equal (Debit: ${formatCurrency(
@@ -1727,15 +1723,15 @@ const CreateTrialBalance = () => {
 
               <MenuPopover>
                 <MenuList>
-                  <MenuItem onClick={handleSave} disabled={saving}>
+                  <MenuItem onClick={() => handleSave("save draft")} disabled={saving}>
                     Save Draft
                   </MenuItem>
 
-                  <MenuItem onClick={handleSave} disabled={saving}>
+                  <MenuItem onClick={() => handleSave("post")} disabled={saving}>
                     Post
                   </MenuItem>
 
-                  <MenuItem onClick={handleSave} disabled={saving}>
+                  <MenuItem onClick={() => handleSave("post and add account")} disabled={saving}>
                     Post & Add Accounts
                   </MenuItem>
                 </MenuList>
