@@ -685,6 +685,7 @@ const CreateTrialBalance = () => {
       mounted = false;
     };
   }, [trialBalanceId]);
+
   console.log("formData", formData);
 
   const hasInitializedLines = React.useRef(false);
