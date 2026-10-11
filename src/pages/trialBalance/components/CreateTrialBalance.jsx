@@ -41,7 +41,7 @@ import { useChartAccount } from "../../../context/ChartAccountContext/ChartAccou
 
 import { useAccountingPeriod } from "../../../context/AccountingPeriodContext/AccountingPeriodContext";
 import { useToast } from "../../../context/ToastContext/ToastContext";
-import { useEffect } from "react";
+import { useEffect, useState, useRef, useMemo, useCallback } from "react";
 
 import { useLocation } from "react-router-dom";
 
@@ -56,8 +56,6 @@ const useStyles = makeStyles({
   },
 
   content: {
-    // width: "100%",
-    // maxWidth: "820px",
     margin: "0 auto",
     padding: "0 10px 10px",
 
@@ -108,7 +106,6 @@ const useStyles = makeStyles({
   },
 
   refInput: {
-    // width: "250px",
 
     "@media (max-width: 700px)": {
       width: "100%",
@@ -116,8 +113,6 @@ const useStyles = makeStyles({
   },
 
   periodDropdown: {
-    // width: "375px",
-    // maxWidth: "100%",
 
     "@media (max-width: 700px)": {
       width: "100%",
@@ -125,8 +120,6 @@ const useStyles = makeStyles({
   },
 
   journalDropdown: {
-    // width: "375px",
-    // maxWidth: "100%",
 
     "@media (max-width: 700px)": {
       width: "100%",
@@ -152,7 +145,7 @@ const useStyles = makeStyles({
   },
 
   attachmentInput: {
-    display: "none", 
+    display: "none",
   },
 
   accountButtonContainer: {
@@ -174,12 +167,36 @@ const useStyles = makeStyles({
     width: "100%",
     marginTop: "12px",
     overflowX: "auto",
+    maxHeight: "500px",
+    overflowY: "auto",
+    position: "relative",
+  },
+
+  headerRow: {
+    position: "sticky",
+    top: 0,
+    backgroundColor: "#ffffff",
+    zIndex: 2,
+    boxShadow: "0 1px 2px rgba(0, 0, 0, 0.05)",
   },
 
   table: {
     width: "100%",
-    minWidth: "680px",
+    minWidth: "780px",
     borderCollapse: "collapse",
+    tableLayout: "fixed",
+  },
+
+  headerCell: {
+    fontWeight: 700,
+    fontSize: "14px",
+    color: "#171717",
+    padding: "8px 10px",
+    borderBottom: "2px solid #dddddd",
+    boxSizing: "border-box",
+    whiteSpace: "nowrap",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
   },
 
   headerCells: {
@@ -188,37 +205,78 @@ const useStyles = makeStyles({
     color: "#171717",
     padding: "8px 10px",
     borderBottom: "2px solid #dddddd",
+    boxSizing: "border-box",
+    whiteSpace: "nowrap",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
   },
 
   tableCell: {
     padding: "8px 10px",
     borderBottom: "1px solid #eeeeee",
     verticalAlign: "middle",
+    boxSizing: "border-box",
+    overflow: "hidden",
+  },
+
+  tableCells: {
+    padding: "8px 10px",
+    borderBottom: "1px solid #eeeeee",
+    verticalAlign: "middle",
+    boxSizing: "border-box",
+    overflow: "hidden",
+  },
+
+  lineNoCell: {
+    width: "70px",
+    minWidth: "70px",
+    maxWidth: "70px",
+    textAlign: "center",
   },
 
   lineNo: {
-    width: "70px",
+    width: "100%",
     textAlign: "center",
   },
 
   accountCell: {
-    minWidth: "330px",
+    minWidth: "350px",
   },
 
   accountDropdown: {
     width: "100%",
+    maxWidth: "100%",
+    boxSizing: "border-box",
+    minWidth: "0 !important",
+    "& input": {
+      minWidth: "0 !important",
+    },
+  },
+
+  accountListbox: {
+    maxHeight: "260px",
   },
 
   amountCell: {
     width: "140px",
+    minWidth: "140px",
+    maxWidth: "140px",
   },
 
   amountInput: {
     width: "100%",
+    maxWidth: "100%",
+    boxSizing: "border-box",
+    minWidth: "0 !important",
+    "& input": {
+      minWidth: "0 !important",
+    },
   },
 
   addCell: {
-    width: "45px",
+    width: "50px",
+    minWidth: "50px",
+    maxWidth: "50px",
     textAlign: "center",
   },
 
@@ -291,6 +349,150 @@ const JOURNAL_TYPES = [
   { value: "2", label: "Adjustment" },
 ];
 
+const createAccountLookup = (accounts = []) => {
+  const byId = new Map();
+  const byCode = new Map();
+  const byName = new Map();
+
+  for (let i = 0; i < accounts.length; i++) {
+    const a = accounts[i];
+    if (a.id) byId.set(String(a.id), a);
+    if (a.code) byCode.set(String(a.code).trim().toLowerCase(), a);
+    if (a.accountName) byName.set(String(a.accountName).trim().toLowerCase(), a);
+  }
+
+  const find = (id, code, name) => {
+    if (id && byId.has(String(id))) return byId.get(String(id));
+    if (code && byCode.has(String(code).trim().toLowerCase()))
+      return byCode.get(String(code).trim().toLowerCase());
+    if (name && byName.has(String(name).trim().toLowerCase()))
+      return byName.get(String(name).trim().toLowerCase());
+    return null;
+  };
+
+  return { byId, byCode, byName, find };
+};
+
+const JournalLineRow = React.memo(
+  ({
+    line,
+    index,
+    isLast,
+    accountOptions,
+    onAccountChange,
+    onAccountNameChange,
+    onAmountChange,
+    onAddLine,
+    onDeleteLine,
+    debitRef,
+    creditRef,
+    styles,
+  }) => {
+    return (
+      <TableRow key={line.lineNo || index}>
+        <TableCell className={`${styles.tableCell} ${styles.lineNoCell}`}>
+          <div className={styles.lineNo}>{line.lineNo}</div>
+        </TableCell>
+        <TableCell className={`${styles.tableCell} ${styles.accountCell}`}>
+          <Combobox
+            className={styles.accountDropdown}
+            positioning={{ autoSize: "width" }}
+            listbox={{
+              className: styles.accountListbox,
+              style: {
+                maxHeight: "260px",
+              },
+            }}
+            placeholder="Select or type account"
+            freeform={true}
+            value={
+              line.accountName ||
+              (line.accountCode
+                ? `${line.accountCode} - ${line.accountName || ""}`
+                : "") ||
+              ""
+            }
+            onChange={(event) =>
+              onAccountNameChange(index, event.target.value)
+            }
+            onOptionSelect={(_, data) =>
+              onAccountChange(index, data.optionValue)
+            }
+          >
+            {accountOptions}
+          </Combobox>
+        </TableCell>
+        <TableCell className={`${styles.tableCell} ${styles.amountCell}`}>
+          <Input
+            ref={(element) => {
+              if (debitRef) debitRef(index, element);
+            }}
+            className={styles.amountInput}
+            value={line.debit}
+            placeholder="£0.00"
+            onChange={(event) =>
+              onAmountChange(index, "debit", event.target.value)
+            }
+          />
+        </TableCell>
+        <TableCell className={`${styles.tableCell} ${styles.amountCell}`}>
+          <Input
+            ref={(element) => {
+              if (creditRef) creditRef(index, element);
+            }}
+            className={styles.amountInput}
+            value={line.credit}
+            placeholder="£0.00"
+            onChange={(event) =>
+              onAmountChange(index, "credit", event.target.value)
+            }
+          />
+        </TableCell>
+        <TableCell className={`${styles.tableCell} ${styles.addCell}`}>
+          {isLast ? (
+            <Button
+              appearance="subtle"
+              icon={<AddRegular />}
+              onClick={onAddLine}
+              aria-label="Add journal line"
+              title="Add journal line"
+            />
+          ) : (
+            <Button
+              appearance="subtle"
+              icon={<Delete16Regular />}
+              onClick={() => onDeleteLine(index)}
+              aria-label="Delete journal line"
+              title="Delete journal line"
+            />
+          )}
+        </TableCell>
+      </TableRow>
+    );
+  }
+);
+
+const PreviewLineRow = React.memo(({ line, formatCurrency, styles }) => (
+  <TableRow key={line.lineNo}>
+    <TableCell className={`${styles.tableCell} ${styles.lineNoCell}`}>
+      <div className={styles.lineNo}>{line.lineNo}</div>
+    </TableCell>
+    <TableCell className={`${styles.tableCell} ${styles.accountCell}`}>
+      <span>
+        {line.accountCode && line.accountName
+          ? `${line.accountCode} - ${line.accountName}`
+          : line.accountName || line.accountCode || "-"}
+      </span>
+    </TableCell>
+    <TableCell className={`${styles.tableCell} ${styles.amountCell}`}>
+      <span>{line.debit ? formatCurrency(line.debit) : "-"}</span>
+    </TableCell>
+    <TableCell className={`${styles.tableCell} ${styles.amountCell}`}>
+      <span>{line.credit ? formatCurrency(line.credit) : "-"}</span>
+    </TableCell>
+  </TableRow>
+));
+
 const CreateTrialBalance = () => {
   const styles = useStyles();
   const navigate = useNavigate();
@@ -306,6 +508,31 @@ const CreateTrialBalance = () => {
   const { getTrialBalanceById, updateTrialBalance, importTrialBalance, createOrUpdateJournal, getJournalById } = useTrialBalance();
 
   const { chartAccounts, getChartAccounts } = useChartAccount();
+
+  const accountLookup = useMemo(
+    () => createAccountLookup(chartAccounts || []),
+    [chartAccounts]
+  );
+
+  const getAccountById = useCallback(
+    (accountId) => accountLookup.byId.get(String(accountId)),
+    [accountLookup]
+  );
+
+  const accountOptions = useMemo(
+    () =>
+      (chartAccounts || []).map((account) => (
+        <Option
+          key={account.id}
+          value={account.id}
+          text={account.accountName}
+        >
+          {account.code ? `${account.code} - ` : ""}
+          {account.accountName}
+        </Option>
+      )),
+    [chartAccounts]
+  );
 
   const {
     accountingPeriods,
@@ -333,20 +560,18 @@ const CreateTrialBalance = () => {
     file: null,
   });
 
-  // const [lines, setLines] = React.useState([
-  //   {
-  //     lineNo: 1,
-  //     accountId: "",
-  //     debit: "",
-  //     credit: "",
-  //     accountNature: null,
-  //   },
-  // ]);
-
   const [lines, setLines] = React.useState([]);
 
   const debitRefs = React.useRef([]);
   const creditRefs = React.useRef([]);
+
+  const setDebitRef = useCallback((index, element) => {
+    debitRefs.current[index] = element;
+  }, []);
+
+  const setCreditRef = useCallback((index, element) => {
+    creditRefs.current[index] = element;
+  }, []);
 
   /* ---------------------------------------------------------
    * LOAD TRIAL BALANCE + SUPPORTING DATA
@@ -370,7 +595,7 @@ const CreateTrialBalance = () => {
 
         const trialBalance = trialBalanceRes?.result || trialBalanceRes;
         const availableAccounts = chartAccountsRes || [];
-        console.log("trialBalance", trialBalance)
+        console.log("trialBalance", trialBalance);
         setTrialBalanceData(trialBalance);
 
         const periodIdVal =
@@ -410,21 +635,14 @@ const CreateTrialBalance = () => {
           Array.isArray(trialBalance.items) &&
           trialBalance.items.length > 0
         ) {
+          const availableLookup = createAccountLookup(availableAccounts);
           const mappedLines = trialBalance.items.map((item, index) => {
             let accountId = item.account?.id || item.accountId || "";
-            let account = availableAccounts.find((a) => a.id === accountId);
+            let account = availableLookup.byId.get(String(accountId));
 
-            if (!account && item.account?.code) {
-              account = availableAccounts.find(
-                (a) => String(a.code).trim() === String(item.account.code).trim()
-              );
-              if (account) accountId = account.id;
-            }
-
-            if (!account && item.accountCode) {
-              account = availableAccounts.find(
-                (a) => String(a.code).trim() === String(item.accountCode).trim()
-              );
+            if (!account && (item.account?.code || item.accountCode)) {
+              const rawCode = item.account?.code || item.accountCode;
+              account = availableLookup.byCode.get(String(rawCode).trim().toLowerCase());
               if (account) accountId = account.id;
             }
 
@@ -450,6 +668,7 @@ const CreateTrialBalance = () => {
           });
 
           setLines(mappedLines);
+          hasInitializedLines.current = true;
         }
       } catch (error) {
         console.error("Failed to load Trial Balance:", error);
@@ -465,7 +684,7 @@ const CreateTrialBalance = () => {
       mounted = false;
     };
   }, [trialBalanceId]);
-  console.log("formData", formData)
+  console.log("formData", formData);
 
   const hasInitializedLines = React.useRef(false);
 
@@ -475,11 +694,9 @@ const CreateTrialBalance = () => {
     // CSV import mode — map imported rows to lines (runs once)
     if (csvImportMode && importedCsvRows.length > 0 && !hasInitializedLines.current) {
       const mappedLines = importedCsvRows.map((row, index) => {
-        const account = (chartAccounts || []).find(
-          (item) =>
-            String(item.code || "").trim() === String(row.accountCode || "").trim() ||
-            String(item.accountName || "").trim().toLowerCase() === String(row.accountName || "").trim().toLowerCase()
-        );
+        const rawCode = String(row.accountCode || "").trim().toLowerCase();
+        const rawName = String(row.accountName || "").trim().toLowerCase();
+        const account = accountLookup.byCode.get(rawCode) || accountLookup.byName.get(rawName) || null;
 
         const accountNature = getAccountNature(account);
         const codeVal = account?.code || row.accountCode || "";
@@ -502,10 +719,11 @@ const CreateTrialBalance = () => {
     }
 
     // Enrich existing lines with account info (runs once after chartAccounts load)
-    if (!hasInitializedLines.current && lines.length > 0) {
+    if (!hasInitializedLines.current && lines.length > 0 && (chartAccounts || []).length > 0) {
       setLines((prevLines) =>
         prevLines.map((line) => {
-          const account = getAccountById(line.accountId);
+          const account = accountLookup.byId.get(String(line.accountId));
+          if (!account) return line;
           return {
             ...line,
             accountCode: line.accountCode || account?.code || "",
@@ -533,7 +751,7 @@ const CreateTrialBalance = () => {
       ]);
       hasInitializedLines.current = true;
     }
-  }, [loading, csvImportMode, importedCsvRows, chartAccounts]);
+  }, [loading, csvImportMode, importedCsvRows, chartAccounts, accountLookup]);
   /* ---------------------------------------------------------
    * HELPERS
    * --------------------------------------------------------- */
@@ -576,10 +794,6 @@ const CreateTrialBalance = () => {
     return null;
   };
 
-  const getAccountById = (accountId) => {
-    return (chartAccounts || []).find((account) => account.id === accountId);
-  };
-
   const getPeriodLabel = (period) => {
     if (!period) return "";
 
@@ -609,13 +823,10 @@ const CreateTrialBalance = () => {
   };
 
   /* ---------------------------------------------------------
-   * ACCOUNT SELECTION
-   * --------------------------------------------------------- */
-  /* ---------------------------------------------------------
    * ACCOUNT SELECTION & NAME EDIT
    * --------------------------------------------------------- */
-  const handleAccountChange = (index, accountId) => {
-    const account = getAccountById(accountId);
+  const handleAccountChange = useCallback((index, accountId) => {
+    const account = accountLookup.byId.get(String(accountId));
     const nature = getAccountNature(account);
 
     setLines((previous) => {
@@ -647,14 +858,14 @@ const CreateTrialBalance = () => {
         creditRefs.current[index]?.focus();
       }
     }, 50);
-  };
+  }, [accountLookup]);
 
-  const handleAccountNameChange = (index, value) => {
-    const matchingAccount = (chartAccounts || []).find(
-      (a) =>
-        String(a.accountName || "").toLowerCase() === value.toLowerCase() ||
-        String(a.code || "").toLowerCase() === value.toLowerCase()
-    );
+  const handleAccountNameChange = useCallback((index, value) => {
+    const trimmedVal = value.trim().toLowerCase();
+    const matchingAccount =
+      accountLookup.byName.get(trimmedVal) ||
+      accountLookup.byCode.get(trimmedVal) ||
+      null;
 
     const nature = getAccountNature(matchingAccount);
 
@@ -677,10 +888,9 @@ const CreateTrialBalance = () => {
 
       return updated;
     });
-  };
+  }, [accountLookup]);
 
-
-  const handleAmountChange = (index, field, value) => {
+  const handleAmountChange = useCallback((index, field, value) => {
     if (value !== "" && !/^\d*\.?\d*$/.test(value)) {
       return;
     }
@@ -712,13 +922,12 @@ const CreateTrialBalance = () => {
 
       return updated;
     });
-  };
-
+  }, []);
 
   /* ---------------------------------------------------------
    * ADD JOURNAL LINE
    * --------------------------------------------------------- */
-  const addLine = () => {
+  const addLine = useCallback(() => {
     setLines((previous) => [
       ...previous,
       {
@@ -731,7 +940,7 @@ const CreateTrialBalance = () => {
         accountNature: null,
       },
     ]);
-  };
+  }, []);
 
   const ensureLastEmptyRow = (lines) => {
     if (!lines || lines.length === 0) return lines;
@@ -762,7 +971,7 @@ const CreateTrialBalance = () => {
     return lines;
   };
 
-  const deleteLine = (index) => {
+  const deleteLine = useCallback((index) => {
     setLines((previous) => {
       if (previous.length <= 1) {
         return previous;
@@ -775,7 +984,44 @@ const CreateTrialBalance = () => {
           lineNo: lineIndex + 1,
         }));
     });
-  };
+  }, []);
+
+  /* ---------------------------------------------------------
+   * VIRTUAL WINDOWING FOR LARGE CSV / JOURNAL TABLES
+   * --------------------------------------------------------- */
+  const tableWrapperRef = useRef(null);
+  const [scrollTop, setScrollTop] = useState(0);
+
+  const handleTableScroll = useCallback((event) => {
+    const currentScrollTop = event.currentTarget.scrollTop;
+    setScrollTop(currentScrollTop);
+  }, []);
+
+  const ROW_HEIGHT = 49;
+  const CONTAINER_HEIGHT = 650;
+  const OVERSCAN = 10;
+  const totalLines = lines.length;
+  const shouldVirtualize = totalLines > 40;
+
+  const { startIndex, endIndex, topSpacer, bottomSpacer } = useMemo(() => {
+    if (!shouldVirtualize) {
+      return { startIndex: 0, endIndex: totalLines, topSpacer: 0, bottomSpacer: 0 };
+    }
+
+    const start = Math.max(0, Math.floor(scrollTop / ROW_HEIGHT) - OVERSCAN);
+    const visibleCount = Math.ceil(CONTAINER_HEIGHT / ROW_HEIGHT) + 2 * OVERSCAN;
+    const end = Math.min(totalLines, start + visibleCount);
+
+    const top = start * ROW_HEIGHT;
+    const bottom = Math.max(0, (totalLines - end) * ROW_HEIGHT);
+
+    return { startIndex: start, endIndex: end, topSpacer: top, bottomSpacer: bottom };
+  }, [shouldVirtualize, totalLines, scrollTop]);
+
+  const visibleLines = useMemo(() => {
+    if (!shouldVirtualize) return lines;
+    return lines.slice(startIndex, endIndex);
+  }, [shouldVirtualize, lines, startIndex, endIndex]);
 
   /* ---------------------------------------------------------
    * TOTALS
@@ -1080,16 +1326,16 @@ const CreateTrialBalance = () => {
     }
 
     // Prevent saving an unbalanced trial balance
-    if(status !== "save draft")
-    if (!isBalanced) {
-      showError(
-        `Amount is not balanced. Debit and Credit must be equal (Debit: ${formatCurrency(
-          totalDebit
-        )}, Credit: ${formatCurrency(totalCredit)}).`
-      );
+    if (status !== "save draft")
+      if (!isBalanced) {
+        showError(
+          `Amount is not balanced. Debit and Credit must be equal (Debit: ${formatCurrency(
+            totalDebit
+          )}, Credit: ${formatCurrency(totalCredit)}).`
+        );
 
-      return;
-    }
+        return;
+      }
 
     try {
       setSaving(true);
@@ -1415,7 +1661,7 @@ const CreateTrialBalance = () => {
         <div className={styles.header}>
           <span className={styles.title}>
             Add Journal
-            {formData.refNo ? ` (${formData.refNo}-J01)` : ""}
+            {formData.refNo ? ` (${formData.refNo})` : ""}
           </span>
 
           <span className={styles.draft}>Draft</span>
@@ -1503,38 +1749,40 @@ const CreateTrialBalance = () => {
 
         {/* JOURNAL TABLE & TOTALS SECTION */}
         {isReadOnlyCsvMode ? (
-          <div className={styles.tableWrapper}>
+          <div
+            ref={tableWrapperRef}
+            className={styles.tableWrapper}
+            onScroll={handleTableScroll}
+          >
             <h4 style={{ marginBottom: "12px", fontSize: "15px", fontWeight: 600 }}>CSV Mapped Preview</h4>
             <Table className={styles.table}>
               <TableHeader>
-                <TableRow>
-                  <TableHeaderCell className={styles.headerCell}>Line no</TableHeaderCell>
-                  <TableHeaderCell className={styles.headerCell}>Account</TableHeaderCell>
-                  <TableHeaderCell className={styles.headerCell}>Debit (£)</TableHeaderCell>
-                  <TableHeaderCell className={styles.headerCell}>Credit (£)</TableHeaderCell>
+                <TableRow className={styles.headerRow}>
+                  <TableHeaderCell className={`${styles.headerCell} ${styles.lineNoCell}`}>Line no</TableHeaderCell>
+                  <TableHeaderCell className={`${styles.headerCell} ${styles.accountCell}`}>Account</TableHeaderCell>
+                  <TableHeaderCell className={`${styles.headerCell} ${styles.amountCell}`}>Debit (£)</TableHeaderCell>
+                  <TableHeaderCell className={`${styles.headerCell} ${styles.amountCell}`}>Credit (£)</TableHeaderCell>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {lines.map((line) => (
-                  <TableRow key={line.lineNo}>
-                    <TableCell className={styles.tableCells}>
-                      <div className={styles.lineNo}>{line.lineNo}</div>
-                    </TableCell>
-                    <TableCell className={`${styles.tableCells} ${styles.accountCell}`}>
-                      <span>
-                        {line.accountCode && line.accountName
-                          ? `${line.accountCode} - ${line.accountName}`
-                          : line.accountName || line.accountCode || "-"}
-                      </span>
-                    </TableCell>
-                    <TableCell className={styles.tableCells}>
-                      <span>{line.debit ? formatCurrency(line.debit) : "-"}</span>
-                    </TableCell>
-                    <TableCell className={styles.tableCells}>
-                      <span>{line.credit ? formatCurrency(line.credit) : "-"}</span>
-                    </TableCell>
-                  </TableRow>
+                {topSpacer > 0 && (
+                  <tr style={{ height: `${topSpacer}px`, border: 0, padding: 0 }} aria-hidden="true">
+                    <td colSpan={4} style={{ height: `${topSpacer}px`, padding: 0, border: 0 }} />
+                  </tr>
+                )}
+                {visibleLines.map((line) => (
+                  <PreviewLineRow
+                    key={line.lineNo}
+                    line={line}
+                    formatCurrency={formatCurrency}
+                    styles={styles}
+                  />
                 ))}
+                {bottomSpacer > 0 && (
+                  <tr style={{ height: `${bottomSpacer}px`, border: 0, padding: 0 }} aria-hidden="true">
+                    <td colSpan={4} style={{ height: `${bottomSpacer}px`, padding: 0, border: 0 }} />
+                  </tr>
+                )}
               </TableBody>
             </Table>
           </div>
@@ -1554,97 +1802,52 @@ const CreateTrialBalance = () => {
             )}
 
             {/* JOURNAL TABLE (EDITABLE) */}
-            <div className={styles.tableWrapper}>
+            <div
+              ref={tableWrapperRef}
+              className={styles.tableWrapper}
+              onScroll={handleTableScroll}
+            >
               <Table className={styles.table}>
                 <TableHeader>
-                  <TableRow>
-                    <TableHeaderCell className={styles.headerCell}>Line no</TableHeaderCell>
-                    <TableHeaderCell className={styles.headerCell}>Account</TableHeaderCell>
-                    <TableHeaderCell className={styles.headerCell}>Debit (£)</TableHeaderCell>
-                    <TableHeaderCell className={styles.headerCell}>Credit (£)</TableHeaderCell>
-                    <TableHeaderCell className={styles.headerCell}>Actions</TableHeaderCell>
+                  <TableRow className={styles.headerRow}>
+                    <TableHeaderCell className={`${styles.headerCell} ${styles.lineNoCell}`}>Line no</TableHeaderCell>
+                    <TableHeaderCell className={`${styles.headerCell} ${styles.accountCell}`}>Account</TableHeaderCell>
+                    <TableHeaderCell className={`${styles.headerCell} ${styles.amountCell}`}>Debit (£)</TableHeaderCell>
+                    <TableHeaderCell className={`${styles.headerCell} ${styles.amountCell}`}>Credit (£)</TableHeaderCell>
+                    <TableHeaderCell className={`${styles.headerCell} ${styles.addCell}`}>Actions</TableHeaderCell>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {lines.map((line, index) => (
-                    <TableRow key={line.lineNo}>
-                      <TableCell className={styles.tableCells}>
-                        <div className={styles.lineNo}>{line.lineNo}</div>
-                      </TableCell>
-                      <TableCell className={`${styles.tableCells} ${styles.accountCell}`}>
-                        <Combobox
-                          className={styles.accountDropdown}
-                          placeholder="Select or type account"
-                          freeform={true}
-                          value={
-                            line.accountName ||
-                            (line.accountCode ? `${line.accountCode} - ${line.accountName || ""}` : "") ||
-                            getAccountById(line.accountId)?.accountName ||
-                            ""
-                          }
-                          onChange={(event) =>
-                            handleAccountNameChange(index, event.target.value)
-                          }
-                          onOptionSelect={(_, data) =>
-                            handleAccountChange(index, data.optionValue)
-                          }
-                        >
-                          {(chartAccounts || []).map((account) => (
-                            <Option key={account.id} value={account.id} text={account.accountName}>
-                              {account.code ? `${account.code} - ` : ""}
-                              {account.accountName}
-                            </Option>
-                          ))}
-                        </Combobox>
-                      </TableCell>
-                      <TableCell className={styles.tableCells}>
-                        <Input
-                          ref={(element) => {
-                            debitRefs.current[index] = element;
-                          }}
-                          className={styles.amountInput}
-                          value={line.debit}
-                          placeholder="£0.00"
-                          onChange={(event) =>
-                            handleAmountChange(index, "debit", event.target.value)
-                          }
-                        />
-                      </TableCell>
-                      <TableCell className={styles.tableCells}>
-                        <Input
-                          ref={(element) => {
-                            creditRefs.current[index] = element;
-                          }}
-                          className={styles.amountInput}
-                          value={line.credit}
-                          placeholder="£0.00"
-                          onChange={(event) =>
-                            handleAmountChange(index, "credit", event.target.value)
-                          }
-                        />
-                      </TableCell>
-                      <TableCell className={`${styles.tableCells} ${styles.addCell}`}>
-                        {index === lines.length - 1 ? (
-                          <Button
-                            appearance="subtle"
-                            icon={<AddRegular />}
-                            onClick={addLine}
-                            aria-label="Add journal line"
-                            title="Add journal line"
-                            disabled={!line.accountId && !line.debit && !line.credit}
-                          />
-                        ) : (
-                          <Button
-                            appearance="subtle"
-                            icon={<Delete16Regular />}
-                            onClick={() => deleteLine(index)}
-                            aria-label="Delete journal line"
-                            title="Delete journal line"
-                          />
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {topSpacer > 0 && (
+                    <tr style={{ height: `${topSpacer}px`, border: 0, padding: 0 }} aria-hidden="true">
+                      <td colSpan={5} style={{ height: `${topSpacer}px`, padding: 0, border: 0 }} />
+                    </tr>
+                  )}
+                  {visibleLines.map((line, relativeIndex) => {
+                    const actualIndex = startIndex + relativeIndex;
+                    return (
+                      <JournalLineRow
+                        key={line.lineNo || actualIndex}
+                        line={line}
+                        index={actualIndex}
+                        isLast={actualIndex === lines.length - 1}
+                        accountOptions={accountOptions}
+                        onAccountChange={handleAccountChange}
+                        onAccountNameChange={handleAccountNameChange}
+                        onAmountChange={handleAmountChange}
+                        onAddLine={addLine}
+                        onDeleteLine={deleteLine}
+                        debitRef={setDebitRef}
+                        creditRef={setCreditRef}
+                        styles={styles}
+                      />
+                    );
+                  })}
+                  {bottomSpacer > 0 && (
+                    <tr style={{ height: `${bottomSpacer}px`, border: 0, padding: 0 }} aria-hidden="true">
+                      <td colSpan={5} style={{ height: `${bottomSpacer}px`, padding: 0, border: 0 }} />
+                    </tr>
+                  )}
                 </TableBody>
               </Table>
             </div>

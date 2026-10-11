@@ -172,6 +172,15 @@ const useStyles = makeStyles({
     },
   },
 
+  saveButton: {
+    margin: "10px",
+    backgroundColor: "#3f82e8",
+    color: "#ffffff",
+
+    ":hover": {
+      backgroundColor: "#3475d4",
+    },
+  },
   posted: {
     backgroundColor: "#dff6dd",
     color: "#107c10",
@@ -190,6 +199,18 @@ const useStyles = makeStyles({
   successIcon: {
     color: "#107c10",
     fontSize: "18px",
+  },
+  footer: {
+    display: "flex",
+    // justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: "30px",
+    paddingBottom: "10px",
+
+    "@media (max-width: 700px)": {
+      flexDirection: "row",
+      gap: "12px",
+    },
   },
 
   summary: {
@@ -401,6 +422,12 @@ const TbDetails = () => {
   const journals = data.journals || [];
   const summary = data.summary || {};
 
+  const AddJournal = () => {
+    navigate(`/trial-balances/${trialBalanceId}/journal/0`);
+  }
+  const AddImport = () => {
+    navigate(`/trial-balances/${trialBalanceId}/imports/0`);
+  }
   return (
     <div >
       <div className={styles.page}>
@@ -829,6 +856,7 @@ const TbDetails = () => {
         {/* =====================================================
           SUMMARY
       ====================================================== */}
+       
         <div className={styles.summary}>
 
           <div className={styles.summaryItem}>
@@ -871,6 +899,24 @@ const TbDetails = () => {
             </span>
           </div>
 
+        </div>
+        <div className={styles.footer}>
+          <Button
+            className={styles.saveButton}
+            onClick={AddImport}
+            disabled={false}
+          >
+            Import
+            {/* {importing ? "Importing..." : "Import"} */}
+          </Button>
+          <Button
+            className={styles.saveButton}
+            onClick={AddJournal}
+            disabled={false}
+          >
+            + Add Journal
+            {/* {importing ? "Importing..." : "Import"} */}
+          </Button>
         </div>
       </div>
     </div>
