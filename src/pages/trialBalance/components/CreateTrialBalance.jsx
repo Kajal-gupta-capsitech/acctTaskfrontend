@@ -577,6 +577,7 @@ const CreateTrialBalance = () => {
    * LOAD TRIAL BALANCE + SUPPORTING DATA
    * --------------------------------------------------------- */
   useEffect(() => {
+    //preventing memory leak by applying unmounting .
     let mounted = true;
 
     const loadData = async () => {
@@ -593,7 +594,7 @@ const CreateTrialBalance = () => {
 
         if (!mounted) return;
 
-        const trialBalance = trialBalanceRes?.result || trialBalanceRes;
+        const trialBalance = trialBalanceRes;
         const availableAccounts = chartAccountsRes || [];
         console.log("trialBalance", trialBalance);
         setTrialBalanceData(trialBalance);
