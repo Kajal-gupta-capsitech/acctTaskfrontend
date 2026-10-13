@@ -71,20 +71,20 @@ const useStyles = makeStyles({
   },
 
   fileRow: {
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "space-between",
-  gap: "8px",
-  width: "100%",
-},
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: "8px",
+    width: "100%",
+  },
 
-fileName: {
-  fontSize: "13px",
-  color: "#666",
-  overflow: "hidden",
-  textOverflow: "ellipsis",
-  whiteSpace: "nowrap",
-},
+  fileName: {
+    fontSize: "13px",
+    color: "#666",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+  },
   footer: {
     display: "flex",
     justifyContent: "flex-end",
@@ -107,21 +107,16 @@ const AddDrawer = ({
 }) => {
 
   const styles = useStyles();
-  const navigate = useNavigate()
-
-  /*
-  |--------------------------------------------------------------------------
-  | Form Data
-  |--------------------------------------------------------------------------
-  */
 
   const [formData, setFormData] =
     React.useState(initialValues);
+  const [errors, setErrors] = React.useState({});
 
 
   React.useEffect(() => {
     if (open) {
       setFormData(initialValues);
+      setErrors({});
     }
   }, [open, initialValues]);
 
@@ -132,7 +127,7 @@ const AddDrawer = ({
       ...prev,
       [name]: value,
     }));
-
+    setErrors((prev) => ({ ...prev, [name]: null }));
   };
 
   const handleFieldChange = (field, value) => {
@@ -159,14 +154,17 @@ const AddDrawer = ({
 
     });
 
+    setErrors((prev) => {
+      const newErrors = { ...prev, [field.name]: null };
+      if (field.clearFieldsOnChange) {
+        field.clearFieldsOnChange.forEach((fieldName) => {
+          newErrors[fieldName] = null;
+        });
+      }
+      return newErrors;
+    });
+
   };
-
-
-  /*
-  |--------------------------------------------------------------------------
-  | Check if field should be visible
-  |--------------------------------------------------------------------------
-  */
 
   const isFieldVisible = (field) => {
 
@@ -185,19 +183,55 @@ const AddDrawer = ({
 
   };
 
-
-  /*
-  |--------------------------------------------------------------------------
-  | Handle Save
-  |--------------------------------------------------------------------------
-  */
+  // const handleSave = () => {
+  //   console.log("Form Data:", formData);
+  //   if (onSubmit) {
+  //     onSubmit(formData);
+  //   }
+  // };
 
   const handleSave = () => {
- console.log("Form Data:", formData);
+    const newErrors = {};
+
+    fields.forEach((field) => {
+      if (!isFieldVisible(field)) return;
+
+      const value = formData[field.name];
+
+      // 1. Check general required fields
+      if (
+        field.required &&
+        (value === undefined ||
+          value === null ||
+          value === "" ||
+          (Array.isArray(value) && value.length === 0))
+      ) {
+        newErrors[field.name] = `${field.label || "This field"} is required.`;
+      }
+
+      // 2. Check custom field-level validation rules if available
+      if (field.validate) {
+        const customError = field.validate(value, formData);
+        if (customError) {
+          newErrors[field.name] = customError;
+        }
+      }
+    });
+
+    // If there are validation errors, block submission and set local errors
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
+    // Clear errors and proceed to parent submit
+    setErrors({});
     if (onSubmit) {
       onSubmit(formData);
     }
   };
+
+
 
   const renderField = (field) => {
 
@@ -255,13 +289,6 @@ const AddDrawer = ({
 
     }
 
-
-    /*
-    |--------------------------------------------------------------------------
-    | RADIO
-    |--------------------------------------------------------------------------
-    */
-
     if (field.type === "radio") {
 
       return (
@@ -300,13 +327,6 @@ const AddDrawer = ({
 
     }
 
-
-    /*
-    |--------------------------------------------------------------------------
-    | CHECKBOX
-    |--------------------------------------------------------------------------
-    */
-
     if (field.type === "checkbox") {
 
       return (
@@ -332,12 +352,6 @@ const AddDrawer = ({
 
     }
 
-
-    /*
-    |--------------------------------------------------------------------------
-    | CHECKBOX GROUP
-    |--------------------------------------------------------------------------
-    */
 
     if (field.type === "checkbox-group") {
 
@@ -371,14 +385,14 @@ const AddDrawer = ({
                   const newValues =
                     checked
                       ? [
-                          ...selectedValues,
-                          option.value,
-                        ]
+                        ...selectedValues,
+                        option.value,
+                      ]
                       : selectedValues.filter(
-                          (value) =>
-                            value !==
-                            option.value
-                        );
+                        (value) =>
+                          value !==
+                          option.value
+                      );
 
                   handleChange(
                     field.name,
@@ -429,10 +443,10 @@ const AddDrawer = ({
           selectedOptions={
             formData[field.name]
               ? [
-                  formData[
-                    field.name
-                  ],
-                ]
+                formData[
+                field.name
+                ],
+              ]
               : []
           }
           onOptionSelect={(_, data) => {
@@ -463,97 +477,55 @@ const AddDrawer = ({
 
     }
 
+    if (field.type === "file") {
+      const selectedFile = formData[field.name];
 
-    /*
-    |--------------------------------------------------------------------------
-    | FILE
-    |--------------------------------------------------------------------------
-    */
+      return (
+        <div className={styles.fileContainer}>
+          <input
+            id={field.name}
+            type="file"
+            accept={field.accept}
+            style={{ display: "none" }}
+            onChange={(e) => {
+              const file = e.target.files?.[0];
 
-    // if (field.type === "file") {
-
-    //   return (
-    //     <div
-    //       className={
-    //         styles.fileContainer
-    //       }
-    //     >
-
-    //       <input
-    //         id={field.name}
-    //         type="file"
-    //         accept={field.accept}
-    //         style={{
-    //           display: "none",
-    //         }}
-    //         onChange={(e) => {
-
-    //           const file =
-    //             e.target.files?.[0];
-
-    //           handleChange(
-    //             field.name,
-    //             file
-    //           );
-
-    //         }}
-    //       />
-
-
-if (field.type === "file") {
-  const selectedFile = formData[field.name];
-
-  return (
-    <div className={styles.fileContainer}>
-      <input
-        id={field.name}
-        type="file"
-        accept={field.accept}
-        style={{ display: "none" }}
-        onChange={(e) => {
-          const file = e.target.files?.[0];
-
-          if (file) {
-            handleChange(field.name, file);
-          }
-        }}
-      />
-
-      {!selectedFile?.name ? (
-        <label htmlFor={field.name}>
-          <Button
-            as="span"
-            // appearance="outline"
-          >
-            Select or drop file
-          </Button>
-        </label>
-      ) : (
-        <div className={styles.fileRow}>
-          <span className={styles.fileName}>
-            {selectedFile.name}
-          </span>
-
-          <Button
-            appearance="subtle"
-            icon={<Delete16Regular />}
-            aria-label="Delete selected CSV"
-            title="Delete selected CSV"
-            onClick={() => {
-              handleChange(field.name, null);
+              if (file) {
+                handleChange(field.name, file);
+              }
             }}
           />
-        </div>
-      )}
-    </div>
-  );
-}
 
-    /*
-    |--------------------------------------------------------------------------
-    | LINK
-    |--------------------------------------------------------------------------
-    */
+          {!selectedFile?.name ? (
+            <label htmlFor={field.name}>
+              <Button
+                as="span"
+              // appearance="outline"
+              >
+                Select or drop file
+              </Button>
+            </label>
+          ) : (
+            <div className={styles.fileRow}>
+              <span className={styles.fileName}>
+                {selectedFile.name}
+              </span>
+
+              <Button
+                appearance="subtle"
+                icon={<Delete16Regular />}
+                aria-label="Delete selected CSV"
+                title="Delete selected CSV"
+                onClick={() => {
+                  handleChange(field.name, null);
+                }}
+              />
+            </div>
+          )}
+        </div>
+      );
+    }
+
 
     if (field.type === "link") {
 
@@ -567,18 +539,12 @@ if (field.type === "file") {
             field.onClick
           }
         >
-         {field.buttonLabel || "Template"}
+          {field.buttonLabel || "Template"}
         </Button>
       );
 
     }
 
-
-    /*
-    |--------------------------------------------------------------------------
-    | NORMAL INPUT
-    |--------------------------------------------------------------------------
-    */
 
     return (
       <Input
@@ -609,11 +575,6 @@ if (field.type === "file") {
   };
 
 
-  /*
-  |--------------------------------------------------------------------------
-  | Button Text
-  |--------------------------------------------------------------------------
-  */
 
   const buttonText =
     submitText ||
@@ -672,23 +633,19 @@ if (field.type === "file") {
 
         {fields.map((field) => {
 
-          /*
-          |--------------------------------------------------------------------------
-          | Conditional Field
-          |--------------------------------------------------------------------------
-          */
-
           if (!isFieldVisible(field)) {
             return null;
           }
 
-
+          const fieldError = errors[field.name];
           return (
             <Field
               key={field.name}
               className={styles.field}
               label={field.label}
               required={field.required}
+              validationState={fieldError ? "error" : "none"}
+              validationMessage={fieldError}
             >
 
               {renderField(field)}

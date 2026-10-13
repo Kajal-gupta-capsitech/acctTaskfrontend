@@ -472,26 +472,26 @@ const JournalLineRow = React.memo(
   }
 );
 
-const PreviewLineRow = React.memo(({ line, formatCurrency, styles }) => (
-  <TableRow key={line.lineNo}>
-    <TableCell className={`${styles.tableCell} ${styles.lineNoCell}`}>
-      <div className={styles.lineNo}>{line.lineNo}</div>
-    </TableCell>
-    <TableCell className={`${styles.tableCell} ${styles.accountCell}`}>
-      <span>
-        {line.accountCode && line.accountName
-          ? `${line.accountCode} - ${line.accountName}`
-          : line.accountName || line.accountCode || "-"}
-      </span>
-    </TableCell>
-    <TableCell className={`${styles.tableCell} ${styles.amountCell}`}>
-      <span>{line.debit ? formatCurrency(line.debit) : "-"}</span>
-    </TableCell>
-    <TableCell className={`${styles.tableCell} ${styles.amountCell}`}>
-      <span>{line.credit ? formatCurrency(line.credit) : "-"}</span>
-    </TableCell>
-  </TableRow>
-));
+// const PreviewLineRow = React.memo(({ line, formatCurrency, styles }) => (
+//   <TableRow key={line.lineNo}>
+//     <TableCell className={`${styles.tableCell} ${styles.lineNoCell}`}>
+//       <div className={styles.lineNo}>{line.lineNo}</div>
+//     </TableCell>
+//     <TableCell className={`${styles.tableCell} ${styles.accountCell}`}>
+//       <span>
+//         {line.accountCode && line.accountName
+//           ? `${line.accountCode} - ${line.accountName}`
+//           : line.accountName || line.accountCode || "-"}
+//       </span>
+//     </TableCell>
+//     <TableCell className={`${styles.tableCell} ${styles.amountCell}`}>
+//       <span>{line.debit ? formatCurrency(line.debit) : "-"}</span>
+//     </TableCell>
+//     <TableCell className={`${styles.tableCell} ${styles.amountCell}`}>
+//       <span>{line.credit ? formatCurrency(line.credit) : "-"}</span>
+//     </TableCell>
+//   </TableRow>
+// ));
 
 const CreateTrialBalance = () => {
   const styles = useStyles();
@@ -1252,74 +1252,6 @@ const CreateTrialBalance = () => {
     }
   };
 
-  // const handleSave = async () => {
-  //   if (!trialBalanceId) {
-  //     showError("Trial Balance ID is missing.");
-  //     return;
-  //   }
-
-  //   // Prevent saving an unbalanced trial balance
-  //   if (!isBalanced) {
-  //     showError(
-  //       `Amount is not balanced. Debit and Credit must be equal (Debit: ${formatCurrency(
-  //         totalDebit
-  //       )}, Credit: ${formatCurrency(totalCredit)}).`
-  //     );
-
-  //     return;
-  //   }
-
-  //   try {
-  //     setSaving(true);
-
-  //     const mappedItems = lines
-  //       .filter(
-  //         (line) =>
-  //           (line.accountId || line.accountName || line.accountCode) &&
-  //           (parseFloat(line.debit) || parseFloat(line.credit))
-  //       )
-  //       .map((line) => {
-  //         const account = getAccountById(line.accountId);
-  //         return {
-  //           accountCode: line.accountCode || account?.code || "",
-  //           accountName: line.accountName || account?.accountName || "",
-  //           debit: parseFloat(line.debit) || 0,
-  //           credit: parseFloat(line.credit) || 0,
-  //           note: line.note || "",
-  //         };
-  //       });
-
-  //     const payload = {
-  //       type: Number(formData.journalType ?? 0),
-  //       journalType: Number(formData.journalType ?? 0),
-  //       periodStart: formData.periodStart || null,
-  //       periodEnd: formData.periodEnd || null,
-  //       journalId: formData?.journalIds?.[0] !== "0" ?  formData?.journalIds?.[0] : null,
-  //       periodId: formData.accountingPeriodId || null,
-  //       accountingPeriodId: formData.accountingPeriodId || null,
-  //       description: formData.description || "",
-  //       turnover,
-  //       totalProfitLoss: profitLossAmount,
-  //       status: isBalanced ? 1 : 0,
-  //       items: mappedItems,
-  //     };
-
-  //     console.log("PATCH Trial Balance payload:", payload);
-
-  //     const res = await updateTrialBalance(trialBalanceId, payload);
-
-  //     const message = res?.message || "Trial balance updated successfully.";
-
-  //     showSuccess(message);
-  //     navigate("/trial-balances");
-  //   } catch (error) {
-  //     console.error("Failed to update Trial Balance:", error);
-  //     showError(error);
-  //   } finally {
-  //     setSaving(false);
-  //   }
-  // };
-
 
   const handleSave = async (status) => {
     if (!trialBalanceId) {
@@ -1509,128 +1441,6 @@ const CreateTrialBalance = () => {
   };
 
 
-  // const handleSave = async () => {
-  //   if (!trialBalanceId) {
-  //     showError("Trial Balance ID is missing.");
-  //     return;
-  //   }
-
-  //   if (!isBalanced) {
-  //     showError(
-  //       `Amount is not balanced. Debit and Credit must be equal 
-  //       (Debit: ${formatCurrency(totalDebit)}, 
-  //        Credit: ${formatCurrency(totalCredit)}).`
-  //     );
-  //     return;
-  //   }
-
-  //   try {
-  //     setSaving(true);
-
-  //     const mappedItems = lines
-  //       .filter(
-  //         (line) =>
-  //           (line.accountId ||
-  //             line.accountName ||
-  //             line.accountCode) &&
-  //           (parseFloat(line.debit) ||
-  //             parseFloat(line.credit))
-  //       )
-  //       .map((line) => {
-  //         const account = getAccountById(line.accountId);
-
-  //         return {
-  //           accountCode:
-  //             line.accountCode ||
-  //             account?.code ||
-  //             "",
-
-  //           accountName:
-  //             line.accountName ||
-  //             account?.accountName ||
-  //             "",
-
-  //           debit: parseFloat(line.debit) || 0,
-  //           credit: parseFloat(line.credit) || 0,
-  //           note: line.note || "",
-  //         };
-  //       });
-
-  //     // IMPORTANT
-  //     const journalId =
-  //       formData?.journalId &&
-  //       formData.journalId !== "0"
-  //         ? formData.journalId
-  //         : "0";
-
-  //     const journalPayload = {
-  //       type: Number(formData.journalType ?? 0),
-
-  //       journalType:
-  //         Number(formData.journalType ?? 0),
-
-  //       journalStatus:
-  //         Number(formData.journalStatus ?? 0),
-
-  //       importType: 1,
-
-  //       csvImportType: 0,
-
-  //       periodStart:
-  //         formData.periodStart || null,
-
-  //       periodEnd:
-  //         formData.periodEnd || null,
-
-  //       description:
-  //         formData.description || "",
-
-  //       isActive: true,
-
-  //       items: mappedItems,
-
-  //       itemsCount: mappedItems.length,
-
-  //       totalDebit: totalDebit,
-
-  //       totalCredit: totalCredit,
-
-  //       status: isBalanced ? 1 : 0,
-  //     };
-
-  //     console.log("Journal ID:", journalId);
-  //     console.log("Journal Payload:", journalPayload);
-
-  //     const response =
-  //       await createOrUpdateJournal(
-  //         formData.refNo,
-  //         journalId,
-  //         journalPayload,
-  //         formData.file || null
-  //       );
-
-  //     showSuccess(
-  //       response?.message ||
-  //         "Journal saved successfully."
-  //     );
-
-  //     navigate("/trial-balances");
-
-  //   } catch (error) {
-  //     console.error(
-  //       "Failed to save journal:",
-  //       error
-  //     );
-
-  //     showError(
-  //       error?.response?.data?.message ||
-  //       "Failed to save journal."
-  //     );
-
-  //   } finally {
-  //     setSaving(false);
-  //   }
-  // };
   /* ---------------------------------------------------------
    * LOADING
    * --------------------------------------------------------- */
@@ -1750,45 +1560,8 @@ const CreateTrialBalance = () => {
         </div>
 
         {/* JOURNAL TABLE & TOTALS SECTION */}
-        {isReadOnlyCsvMode ? (
-          <div
-            ref={tableWrapperRef}
-            className={styles.tableWrapper}
-            onScroll={handleTableScroll}
-          >
-            <h4 style={{ marginBottom: "12px", fontSize: "15px", fontWeight: 600 }}>CSV Mapped Preview</h4>
-            <Table className={styles.table}>
-              <TableHeader>
-                <TableRow className={styles.headerRow}>
-                  <TableHeaderCell className={`${styles.headerCell} ${styles.lineNoCell}`}>Line no</TableHeaderCell>
-                  <TableHeaderCell className={`${styles.headerCell} ${styles.accountCell}`}>Account</TableHeaderCell>
-                  <TableHeaderCell className={`${styles.headerCell} ${styles.amountCell}`}>Debit (£)</TableHeaderCell>
-                  <TableHeaderCell className={`${styles.headerCell} ${styles.amountCell}`}>Credit (£)</TableHeaderCell>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {topSpacer > 0 && (
-                  <tr style={{ height: `${topSpacer}px`, border: 0, padding: 0 }} aria-hidden="true">
-                    <td colSpan={4} style={{ height: `${topSpacer}px`, padding: 0, border: 0 }} />
-                  </tr>
-                )}
-                {visibleLines.map((line) => (
-                  <PreviewLineRow
-                    key={line.lineNo}
-                    line={line}
-                    formatCurrency={formatCurrency}
-                    styles={styles}
-                  />
-                ))}
-                {bottomSpacer > 0 && (
-                  <tr style={{ height: `${bottomSpacer}px`, border: 0, padding: 0 }} aria-hidden="true">
-                    <td colSpan={4} style={{ height: `${bottomSpacer}px`, padding: 0, border: 0 }} />
-                  </tr>
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        ) : (
+     
+
           <>
             {/* ACCOUNT BUTTON */}
             {!csvImportMode && (
@@ -1888,7 +1661,7 @@ const CreateTrialBalance = () => {
               </div>
             </div>
           </>
-        )}
+      
 
 
         {/* FOOTER */}

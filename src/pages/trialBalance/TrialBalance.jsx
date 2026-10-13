@@ -568,231 +568,339 @@ const TrialBalance = () => {
   };
 
 
+  // const trialBalanceFields = [
+  //   /*
+  //   |--------------------------------------------------------------------------
+  //   | Type
+  //   |--------------------------------------------------------------------------
+  //   */
+
+  //   {
+  //     name: "trialBalanceType",
+
+  //     label: "Type",
+
+  //     type: "radio",
+
+  //     required: true,
+
+  //     options: [
+  //       {
+  //         value: "statutory",
+  //         label: "Statutory",
+  //       },
+  //       {
+  //         value: "management",
+  //         label: "Management",
+  //       },
+  //     ],
+
+  //     // When Type changes, clear fields
+  //     // belonging to the previous type.
+  //     clearFieldsOnChange: [
+  //       "accountingPeriodId",
+  //       "periodFrom",
+  //       "periodTo",
+  //     ],
+  //   },
+
+
+  //   /*
+  //   |--------------------------------------------------------------------------
+  //   | Statutory -> Accounting Period
+  //   |--------------------------------------------------------------------------
+  //   */
+
+  //   {
+  //     name: "accountingPeriodId",
+
+  //     label: "Period",
+
+  //     type: "select",
+
+  //     required: true,
+
+  //     showWhen: {
+  //       field: "trialBalanceType",
+  //       value: "statutory",
+  //     },
+
+  //     placeholder: accountingPeriodLoading
+  //       ? "Loading periods..."
+  //       : "Select period",
+
+  //     options: accountingPeriods.map(
+  //       (period) => ({
+  //         value: period.id,
+
+  //         label: `${formatDate(
+  //           period.periodFrom
+  //         )} - ${formatDate(
+  //           period.periodTo
+  //         )}`,
+  //       })
+  //     ),
+  //   },
+
+
+  //   /*
+  //   |--------------------------------------------------------------------------
+  //   | Management -> From
+  //   |--------------------------------------------------------------------------
+  //   */
+
+  //   {
+  //     name: "periodFrom",
+
+  //     label: "From",
+
+  //     type: "date",
+
+  //     required: true,
+
+  //     showWhen: {
+  //       field: "trialBalanceType",
+  //       value: "management",
+  //     },
+
+  //     placeholder: "Select from date",
+  //   },
+
+
+  //   /*
+  //   |--------------------------------------------------------------------------
+  //   | Management -> To
+  //   |--------------------------------------------------------------------------
+  //   */
+
+  //   {
+  //     name: "periodTo",
+
+  //     label: "To",
+
+  //     type: "date",
+
+  //     required: true,
+
+  //     showWhen: {
+  //       field: "trialBalanceType",
+  //       value: "management",
+  //     },
+
+  //     placeholder: "Select to date",
+  //   },
+
+
+  //   /*
+  //   |--------------------------------------------------------------------------
+  //   | Import Mode
+  //   |--------------------------------------------------------------------------
+  //   */
+
+  //   {
+  //     name: "importMode",
+
+  //     label: "Mode of Import",
+
+  //     type: "radio",
+
+  //     required: true,
+
+  //     options: [
+  //       {
+  //         value: "csv",
+  //         label: "CSV",
+  //       },
+  //       {
+  //         value: "manual",
+  //         label: "Manual",
+  //       },
+  //     ],
+
+  //     // If user changes CSV -> Manual,
+  //     // clear the selected CSV file.
+  //     clearFieldsOnChange: [
+  //       "file",
+  //     ],
+  //   },
+
+
+  //   /*
+  //   |--------------------------------------------------------------------------
+  //   | Import Format
+  //   |--------------------------------------------------------------------------
+  //   */
+
+  //   {
+  //     name: "importFormat",
+
+  //     label: "Import Format",
+
+  //     type: "select",
+
+  //     options: [
+  //       {
+  //         value: "default",
+  //         label: "Default",
+  //       },
+  //     ],
+  //     showWhen: {
+  //       field: "importMode",
+  //       value: "csv",
+  //     },
+  //   },
+
+
+  //   /*
+  //   |--------------------------------------------------------------------------
+  //   | CSV File
+  //   |--------------------------------------------------------------------------
+  //   */
+
+
+
+  //   {
+  //     name: "file",
+
+  //     label: "CSV File",
+
+  //     type: "file",
+
+  //     accept: ".csv",
+
+  //     // ONLY visible when CSV is selected.
+  //     showWhen: {
+  //       field: "importMode",
+  //       value: "csv",
+  //     },
+  //   },
+  //   {
+  //     name: "csvTemplate",
+  //     label: "",
+  //     type: "link",
+  //     buttonLabel: "Download CSV Template",
+  //     onClick: downloadCsvTemplate,
+  //     showWhen: {
+  //       field: "importMode",
+  //       value: "csv",
+  //     },
+  //   },
+  // ];
+
+
+
+
   const trialBalanceFields = [
-    /*
-    |--------------------------------------------------------------------------
-    | Type
-    |--------------------------------------------------------------------------
-    */
-
-    {
-      name: "trialBalanceType",
-
-      label: "Type",
-
-      type: "radio",
-
-      required: true,
-
-      options: [
-        {
-          value: "statutory",
-          label: "Statutory",
-        },
-        {
-          value: "management",
-          label: "Management",
-        },
-      ],
-
-      // When Type changes, clear fields
-      // belonging to the previous type.
-      clearFieldsOnChange: [
-        "accountingPeriodId",
-        "periodFrom",
-        "periodTo",
-      ],
+  {
+    name: "trialBalanceType",
+    label: "Type",
+    type: "radio",
+    required: true,
+    options: [
+      { value: "statutory", label: "Statutory" },
+      { value: "management", label: "Management" },
+    ],
+    clearFieldsOnChange: ["accountingPeriodId", "periodFrom", "periodTo"],
+  },
+  {
+    name: "accountingPeriodId",
+    label: "Period",
+    type: "select",
+    required: true,
+    showWhen: { field: "trialBalanceType", value: "statutory" },
+    placeholder: accountingPeriodLoading ? "Loading periods..." : "Select period",
+    options: accountingPeriods.map((period) => ({
+      value: period.id,
+      label: `${formatDate(period.periodFrom)} - ${formatDate(period.periodTo)}`,
+    })),
+    validate: (value, formData) => {
+      if (formData.trialBalanceType === "statutory" && !value) {
+        return "Please select an accounting period.";
+      }
+      return null;
     },
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Statutory -> Accounting Period
-    |--------------------------------------------------------------------------
-    */
-
-    {
-      name: "accountingPeriodId",
-
-      label: "Period",
-
-      type: "select",
-
-      required: true,
-
-      showWhen: {
-        field: "trialBalanceType",
-        value: "statutory",
-      },
-
-      placeholder: accountingPeriodLoading
-        ? "Loading periods..."
-        : "Select period",
-
-      options: accountingPeriods.map(
-        (period) => ({
-          value: period.id,
-
-          label: `${formatDate(
-            period.periodFrom
-          )} - ${formatDate(
-            period.periodTo
-          )}`,
-        })
-      ),
+  },
+  {
+    name: "periodFrom",
+    label: "From",
+    type: "date",
+    required: true,
+    showWhen: { field: "trialBalanceType", value: "management" },
+    placeholder: "Select from date",
+    validate: (value, formData) => {
+      if (formData.trialBalanceType === "management") {
+        if (!value) return "Start date is required.";
+        if (formData.periodTo && new Date(value) > new Date(formData.periodTo)) {
+          return "Start date cannot be greater than end date.";
+        }
+      }
+      return null;
     },
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Management -> From
-    |--------------------------------------------------------------------------
-    */
-
-    {
-      name: "periodFrom",
-
-      label: "From",
-
-      type: "date",
-
-      required: true,
-
-      showWhen: {
-        field: "trialBalanceType",
-        value: "management",
-      },
-
-      placeholder: "Select from date",
+  },
+  {
+    name: "periodTo",
+    label: "To",
+    type: "date",
+    required: true,
+    showWhen: { field: "trialBalanceType", value: "management" },
+    placeholder: "Select to date",
+    validate: (value, formData) => {
+      if (formData.trialBalanceType === "management") {
+        if (!value) {
+          return "End date is required.";
+        }
+        if (formData.periodFrom && new Date(value) < new Date(formData.periodFrom)) {
+          return "End date must be more than the start date.";
+        }
+      }
+      return null;
     },
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Management -> To
-    |--------------------------------------------------------------------------
-    */
-
-    {
-      name: "periodTo",
-
-      label: "To",
-
-      type: "date",
-
-      required: true,
-
-      showWhen: {
-        field: "trialBalanceType",
-        value: "management",
-      },
-
-      placeholder: "Select to date",
+  },
+  {
+    name: "importMode",
+    label: "Mode of Import",
+    type: "radio",
+    required: true,
+    options: [
+      { value: "csv", label: "CSV" },
+      { value: "manual", label: "Manual" },
+    ],
+    clearFieldsOnChange: ["file"],
+  },
+  {
+    name: "importFormat",
+    label: "Import Format",
+    type: "select",
+    options: [{ value: "default", label: "Default" }],
+    showWhen: { field: "importMode", value: "csv" },
+  },
+  {
+    name: "file",
+    label: "CSV File",
+    type: "file",
+    accept: ".csv",
+    required: true,
+    showWhen: { field: "importMode", value: "csv" },
+    validate: (value, formData) => {
+      if (formData.importMode === "csv" && !value) {
+        return "Please upload a CSV file.";
+      }
+      return null;
     },
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Import Mode
-    |--------------------------------------------------------------------------
-    */
-
-    {
-      name: "importMode",
-
-      label: "Mode of Import",
-
-      type: "radio",
-
-      required: true,
-
-      options: [
-        {
-          value: "csv",
-          label: "CSV",
-        },
-        {
-          value: "manual",
-          label: "Manual",
-        },
-      ],
-
-      // If user changes CSV -> Manual,
-      // clear the selected CSV file.
-      clearFieldsOnChange: [
-        "file",
-      ],
-    },
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Import Format
-    |--------------------------------------------------------------------------
-    */
-
-    {
-      name: "importFormat",
-
-      label: "Import Format",
-
-      type: "select",
-
-      options: [
-        {
-          value: "default",
-          label: "Default",
-        },
-      ],
-      showWhen: {
-        field: "importMode",
-        value: "csv",
-      },
-    },
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | CSV File
-    |--------------------------------------------------------------------------
-    */
-
-
-
-    {
-      name: "file",
-
-      label: "CSV File",
-
-      type: "file",
-
-      accept: ".csv",
-
-      // ONLY visible when CSV is selected.
-      showWhen: {
-        field: "importMode",
-        value: "csv",
-      },
-    },
-    {
-      name: "csvTemplate",
-      label: "",
-      type: "link",
-      buttonLabel: "Download CSV Template",
-      onClick: downloadCsvTemplate,
-      showWhen: {
-        field: "importMode",
-        value: "csv",
-      },
-    },
-  ];
-
+  },
+  {
+    name: "csvTemplate",
+    label: "",
+    type: "link",
+    buttonLabel: "Download CSV Template",
+    onClick: downloadCsvTemplate,
+    showWhen: { field: "importMode", value: "csv" },
+  },
+];
 
 
   /*
-  |--------------------------------------------------------------------------
-  | Initial Values
-  |--------------------------------------------------------------------------
+  |-----------------------------Initial Values -----------------------------------------
   */
 
   const initialValues = {
@@ -876,6 +984,8 @@ const TrialBalance = () => {
     try {
       console.log("handleSubmit Data:", data);
 
+
+      return;
       let csvRows = [];
 
       if (data.importMode === "csv" && data.file) {
