@@ -85,10 +85,10 @@ const trialBalanceColumns = [
     columnKey: "period",
     label: "Period",
   },
-  {
-    columnKey: "turnover",
-    label: "Turnover",
-  },
+  // {
+  //   columnKey: "turnover",
+  //   label: "Turnover",
+  // },
   {
     columnKey: "description",
     label: "Description",
@@ -97,10 +97,10 @@ const trialBalanceColumns = [
     columnKey: "type",
     label: "Type",
   },
-  {
-    columnKey: "accountReports",
-    label: "Account Reports",
-  },
+  // {
+  //   columnKey: "accountReports",
+  //   label: "Account Reports",
+  // },
   {
     columnKey: "importType",
     label: "Import Type",
@@ -155,8 +155,8 @@ const TrialBalance = () => {
   |--------------------------------------------------------------------------
   */
 
-  const [selectedValue, setSelectedValue] =
-    React.useState("tab1");
+  // const [selectedValue, setSelectedValue] =
+  //   React.useState("tab1");
 
 
   /*
@@ -242,9 +242,9 @@ const TrialBalance = () => {
   |--------------------------------------------------------------------------
   */
 
-  React.useEffect(() => {
-    getAccountingPeriods();
-  }, []);
+  // React.useEffect(() => {
+  //   getAccountingPeriods();
+  // }, []);
 
 
   React.useEffect(() => {
@@ -261,9 +261,9 @@ const TrialBalance = () => {
   |--------------------------------------------------------------------------
   */
 
-  const onTabSelect = (event, data) => {
-    setSelectedValue(data.value);
-  };
+  // const onTabSelect = (event, data) => {
+  //   setSelectedValue(data.value);
+  // };
 
 
   /*
@@ -402,8 +402,8 @@ const TrialBalance = () => {
 
         period,
 
-        turnover:
-          trialBalance.turnover ?? 0,
+        // turnover:
+        //   trialBalance.turnover ?? 0,
 
         description:
           trialBalance.description || "",
@@ -426,83 +426,83 @@ const TrialBalance = () => {
   }, [trialBalances, handleEditItem, handleDeleteItem]);
 
 
-  const [isPeriodDrawerOpen, setIsPeriodDrawerOpen] = React.useState(false);
-  const [editingPeriod, setEditingPeriod] = React.useState(null);
+  // const [isPeriodDrawerOpen, setIsPeriodDrawerOpen] = React.useState(false);
+  // const [editingPeriod, setEditingPeriod] = React.useState(null);
 
-  const accountingPeriodFields = [
-    {
-      name: "periodFrom",
-      label: "Period From",
-      type: "date",
-      required: true,
-    },
-    {
-      name: "periodTo",
-      label: "To",
-      type: "date",
-      required: true,
-    },
-  ];
+  // const accountingPeriodFields = [
+  //   {
+  //     name: "periodFrom",
+  //     label: "Period From",
+  //     type: "date",
+  //     required: true,
+  //   },
+  //   {
+  //     name: "periodTo",
+  //     label: "To",
+  //     type: "date",
+  //     required: true,
+  //   },
+  // ];
 
-  const handleEditPeriod = React.useCallback((period) => {
-    setEditingPeriod(period);
-    setIsPeriodDrawerOpen(true);
-  }, []);
+  // const handleEditPeriod = React.useCallback((period) => {
+  //   setEditingPeriod(period);
+  //   setIsPeriodDrawerOpen(true);
+  // }, []);
 
-  const handleDeletePeriod = React.useCallback(
-    async (period) => {
-      if (
-        window.confirm(
-          `Are you sure you want to delete accounting period (${formatDate(
-            period.periodFrom
-          )} - ${formatDate(period.periodTo)})?`
-        )
-      ) {
-        try {
-          const res = await deleteAccountingPeriod(period.id);
-          const msg = res?.message || "Accounting period deleted successfully.";
-          showSuccess(msg);
-        } catch (err) {
-          console.error("Failed to delete accounting period:", err);
-          showError(err);
-        }
-      }
-    },
-    [deleteAccountingPeriod, showSuccess, showError]
-  );
+  // const handleDeletePeriod = React.useCallback(
+  //   async (period) => {
+  //     if (
+  //       window.confirm(
+  //         `Are you sure you want to delete accounting period (${formatDate(
+  //           period.periodFrom
+  //         )} - ${formatDate(period.periodTo)})?`
+  //       )
+  //     ) {
+  //       try {
+  //         const res = await deleteAccountingPeriod(period.id);
+  //         const msg = res?.message || "Accounting period deleted successfully.";
+  //         showSuccess(msg);
+  //       } catch (err) {
+  //         console.error("Failed to delete accounting period:", err);
+  //         showError(err);
+  //       }
+  //     }
+  //   },
+  //   [deleteAccountingPeriod, showSuccess, showError]
+  // );
 
-  const handleAccountingPeriodSubmit = async (data) => {
-    try {
-      const fromDate = data.periodFrom ? new Date(data.periodFrom).toISOString() : null;
-      const toDate = data.periodTo ? new Date(data.periodTo).toISOString() : null;
+  // const handleAccountingPeriodSubmit = async (data) => {
+  //   try {
+  //     const fromDate = data.periodFrom ? new Date(data.periodFrom).toISOString() : null;
+  //     const toDate = data.periodTo ? new Date(data.periodTo).toISOString() : null;
 
-      if (!fromDate || !toDate) {
-        showError("Please select both Period From and To dates.");
-        return;
-      }
+  //     if (!fromDate || !toDate) {
+  //       showError("Please select both Period From and To dates.");
+  //       return;
+  //     }
 
-      if (editingPeriod) {
-        const res = await updateAccountingPeriod(editingPeriod.id, {
-          periodFrom: fromDate,
-          periodTo: toDate,
-        });
-        showSuccess(res?.message || "Accounting period updated successfully.");
-      } else {
-        const res = await createAccountingPeriod({
-          periodFrom: fromDate,
-          periodTo: toDate,
-          isActive: true,
-          isClosed: false,
-        });
-        showSuccess(res?.message || "Accounting period created successfully.");
-      }
-      setIsPeriodDrawerOpen(false);
-      setEditingPeriod(null);
-    } catch (err) {
-      console.error("Failed to save accounting period:", err);
-      showError(err);
-    }
-  };
+  //     if (editingPeriod) {
+  //       const res = await updateAccountingPeriod(editingPeriod.id, {
+  //         periodFrom: fromDate,
+  //         periodTo: toDate,
+  //       });
+  //       showSuccess(res?.message || "Accounting period updated successfully.");
+  //     } else {
+  //       const res = await createAccountingPeriod({
+  //         periodFrom: fromDate,
+  //         periodTo: toDate,
+  //         isActive: true,
+  //         isClosed: false,
+  //       });
+  //       showSuccess(res?.message || "Accounting period created successfully.");
+  //     }
+  //     setIsPeriodDrawerOpen(false);
+  //     setEditingPeriod(null);
+  //   } catch (err) {
+  //     console.error("Failed to save accounting period:", err);
+  //     showError(err);
+  //   }
+  // };
 
   /*
   |--------------------------------------------------------------------------
@@ -510,34 +510,34 @@ const TrialBalance = () => {
   |--------------------------------------------------------------------------
   */
 
-  const accountingPeriodItems = React.useMemo(() => {
-    return accountingPeriods.map((period, index) => {
+  // const accountingPeriodItems = React.useMemo(() => {
+  //   return accountingPeriods.map((period, index) => {
 
-      let status = "-";
+  //     let status = "-";
 
-      if (period.isActive) {
-        status = "Active";
-      } else if (period.isClosed) {
-        status = "Completed";
-      }
+  //     if (period.isActive) {
+  //       status = "Active";
+  //     } else if (period.isClosed) {
+  //       status = "Completed";
+  //     }
 
-      return {
-        sNo: index + 1,
+  //     return {
+  //       sNo: index + 1,
 
-        period: `${formatDate(
-          period.periodFrom
-        )}  - ${formatDate(
-          period.periodTo
-        )}`,
+  //       period: `${formatDate(
+  //         period.periodFrom
+  //       )}  - ${formatDate(
+  //         period.periodTo
+  //       )}`,
 
-        status,
+  //       status,
 
-        id: period.id,
-        onEdit: () => handleEditPeriod(period),
-        onDelete: () => handleDeletePeriod(period),
-      };
-    });
-  }, [accountingPeriods, handleEditPeriod, handleDeletePeriod]);
+  //       id: period.id,
+  //       onEdit: () => handleEditPeriod(period),
+  //       onDelete: () => handleDeletePeriod(period),
+  //     };
+  //   });
+  // }, [accountingPeriods, handleEditPeriod, handleDeletePeriod]);
 
 
   /*
@@ -985,7 +985,7 @@ const TrialBalance = () => {
       console.log("handleSubmit Data:", data);
 
 
-      return;
+     
       let csvRows = [];
 
       if (data.importMode === "csv" && data.file) {
@@ -996,7 +996,7 @@ const TrialBalance = () => {
       const payload = new FormData();
 
       payload.append(
-        "trialBalanceType",
+        "type",
         data.trialBalanceType === "statutory" ? "0" : "1"
       );
 
@@ -1032,7 +1032,7 @@ const TrialBalance = () => {
 
       if (data.importMode === "csv" && data.file) {
         payload.append("csvFile", data.file, data.file.name);
-        payload.append("file", data.file, data.file.name);
+        // payload.append("file", data.file, data.file.name);
       }
 
       const createdRes = await createTrialBalance(payload);
@@ -1143,7 +1143,7 @@ const TrialBalance = () => {
 
       <div className={styles.tabsContainer}>
 
-        <TabList
+        {/* <TabList
           selectedValue={selectedValue}
           onTabSelect={onTabSelect}
         >
@@ -1165,7 +1165,7 @@ const TrialBalance = () => {
             Accounting Periods
           </Tab>
 
-        </TabList>
+        </TabList> */}
 
       </div>
 
@@ -1174,7 +1174,7 @@ const TrialBalance = () => {
       {/* TRIAL BALANCE TAB */}
       {/* ========================================================= */}
 
-      {selectedValue === "tab1" && (
+      {/* {selectedValue === "tab1" && ( */}
 
         <div
           id="panel1"
@@ -1227,79 +1227,11 @@ const TrialBalance = () => {
             columns={trialBalanceColumns}
           />
         </div>
-      )}
+      {/* // )} */}
 
 
-      {/* ========================================================= */}
-      {/* ACCOUNTING PERIOD TAB */}
-      {/* ========================================================= */}
+ 
 
-      {selectedValue === "tab2" && (
-
-        <div
-          id="panel2"
-          role="tabpanel"
-          aria-labelledby="tab2"
-        >
-
-          {/* Add Accounting Period */}
-
-          <div className={styles.buttonContainer}>
-
-            <Button
-              appearance="subtle"
-              icon={<Add20Regular />}
-              onClick={() => {
-                setEditingPeriod(null);
-                setIsPeriodDrawerOpen(true);
-              }}
-            >
-              Add
-            </Button>
-
-            <AddDrawer
-              open={isPeriodDrawerOpen}
-              onClose={() => {
-                setIsPeriodDrawerOpen(false);
-                setEditingPeriod(null);
-              }}
-              title={
-                editingPeriod
-                  ? "Edit Accounting Period"
-                  : "Add Accounting Period"
-              }
-              fields={accountingPeriodFields}
-              initialValues={
-                editingPeriod
-                  ? {
-                    periodFrom: editingPeriod.periodFrom
-                      ? new Date(editingPeriod.periodFrom)
-                      : null,
-                    periodTo: editingPeriod.periodTo
-                      ? new Date(editingPeriod.periodTo)
-                      : null,
-                  }
-                  : {
-                    periodFrom: null,
-                    periodTo: null,
-                  }
-              }
-              onSubmit={handleAccountingPeriodSubmit}
-            />
-
-          </div>
-
-
-          {/* Accounting Period Table */}
-
-          <TableComponent
-            items={accountingPeriodItems}
-            columns={accountingPeriodColumns}
-          />
-
-        </div>
-
-      )}
 
       {/* Trial Balance Details Modal */}
       <Dialog
