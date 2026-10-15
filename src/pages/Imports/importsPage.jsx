@@ -568,7 +568,7 @@ const ImportTablePage = () => {
 
         const trialBalanceRes = await getImportsById(trialBalanceId, importsId);
         await getAccountingPeriods();
-
+        console.log("trialbalance", trialBalanceRes)
         if (!mounted) return;
 
         const importData = trialBalanceRes?.result || trialBalanceRes;
@@ -577,7 +577,7 @@ const ImportTablePage = () => {
 
         setFormData((prev) => ({
           ...prev,
-          refNo: importData?.number || "",
+          refNo: importData?.number || importData?.trialBalance?.name || "",
           description: importData?.description || "",
           periodStart: importData?.periodStart || "",
           periodEnd: importData?.periodEnd || "",

@@ -5,12 +5,8 @@ import {
   Button,
   Field,
   Input,
-  Textarea,
-  Dropdown,
-  Option,
   Spinner,
   makeStyles,
-  tokens,
   Table,
   TableHeader,
   TableHeaderCell,
@@ -21,6 +17,7 @@ import {
   Badge,
   Tooltip,
 } from "@fluentui/react-components";
+
 
 import {
   EditRegular,
@@ -33,6 +30,8 @@ import {
 import { useTrialBalance } from "../../../context/TrialBalanceContext/TrialBalanceContext";
 import { useNavigate, useParams } from "react-router-dom";
 import { BreadCrumbs } from "../../../componenets/breadCrumbs/BreadCrumbs";
+import AddDrawer from "../../../componenets/addDrawer/AddDrawer";
+import { useToast } from "../../../context/ToastContext/ToastContext";
 
 // import { getTrialBalanceDetails } from "../../api/trialBalanceDetailsApi";
 
@@ -301,9 +300,11 @@ const TbDetails = () => {
   const { trialBalanceId } = useParams();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const [error, setError] = useState(null);
-  const { getTrialBalanceDetails } = useTrialBalance();
-  const navigate = useNavigate()
+  const { getTrialBalanceDetails, deleteTJournal, createTrialBalance, updateCSVupload } = useTrialBalance();
+  const navigate = useNavigate();
+  const { showSuccess, showError } = useToast();
   /**
    * ============================================================
    * GET TRIAL BALANCE DETAILS
@@ -359,6 +360,56 @@ const TbDetails = () => {
     console.log("Delete Import:", item);
   };
 
+
+  const downloadCsvTemplate = () => {
+    const csvContent = '"Account Code","Account Name","Debit","Credit"\\n';
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "trial-balance-template.csv";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const uploadCsvFields = [
+    // {
+    //   name: "importFormat",
+    //   label: "Import Format",
+    //   type: "select",
+    //   required: true,
+    //   options: [{ value: "default", label: "Default" }],
+    // },
+    {
+      name: "file",
+      label: "CSV File",
+      type: "file",
+      accept: ".csv",
+      required: true,
+      validate: (value) => {
+        if (!value) return "Please upload a CSV file.";
+        if (!value.name?.toLowerCase().endsWith(".csv")) {
+          return "Please select a CSV file.";
+        }
+        return null;
+      },
+    },
+    {
+      name: "csvTemplate",
+      label: "",
+      type: "link",
+      buttonLabel: "Download CSV Template",
+      onClick: downloadCsvTemplate,
+    },
+  ];
+
+  const uploadInitialValues = {
+    importFormat: "default",
+    file: null,
+  };
+
   /**
    * ============================================================
    * JOURNAL ACTIONS
@@ -372,8 +423,19 @@ const TbDetails = () => {
     navigate(`/trial-balances/${trialBalanceId}/journal/${journal?.id || 0}`);
   };
 
-  const handleDeleteJournal = (journal) => {
-    console.log("Delete Journal:", journal);
+  const handleDeleteJournal = async (journal) => {
+
+    var res = await deleteTJournal(trialBalanceId, journal?.id || 0);
+    console.log("Delete res:", res)
+    if (!res?.status) {
+      throw new Error(
+        res?.message || "Unable to load trial balance details."
+      );
+    }
+
+    setData(res.result);
+
+    console.log("Delete Journal:", res);
   };
 
   const handleUnpostJournal = (journal) => {
@@ -386,6 +448,72 @@ const TbDetails = () => {
 
   const handleAttachment = (journal) => {
     console.log("Add Attachment:", journal);
+  };
+
+
+  const handleSubmit = async (formData) => {
+    const file = formData?.file;
+
+    if (!file) {
+      throw new Error("Please select a CSV file.");
+    }
+
+    if (!file.name?.toLowerCase().endsWith(".csv")) {
+      throw new Error("Please select a valid .csv file.");
+    }
+
+    try {
+
+      const payload = new FormData();
+      payload.append("csvFile", file, file.name);
+      payload.append("importFormat", formData.importFormat || "default");
+
+      // Uses the existing Trial Balance RefNo from the current route.
+
+      const createdRes = await updateCSVupload(payload);
+      const successMessage =
+        createdRes?.message || "Trial balance update successfully with CSV upload";
+      showSuccess(successMessage);
+
+      // if (!response.ok || result?.status === false) {
+      //   throw new Error(
+      //     result?.message ||
+      //     result?.error ||
+      //     `CSV upload failed (${response.status}).`
+      //   );
+      // }
+  const createdTrialBalance = createdRes;
+      // const trialBalanceId = createdTrialBalance?.refNo;
+      const lastImportId = createdTrialBalance?.importIds?.[createdTrialBalance?.importIds.length - 1];
+      console.log("createdTrialBalance", createdTrialBalance, lastImportId);
+      setDrawerOpen(false);
+
+      
+      await loadTrialBalanceDetails();
+
+      const importResult = createdRes?.result || createdRes;
+      const importId =
+        importResult?.importId ||
+        importResult?.id ||
+        importResult?.import?.id ||
+        importResult?.import?.importId;
+
+      if (importId) {
+        navigate(`/trial-balances/${trialBalanceId}/imports/${importId}`, {
+          state: {
+            trialBalanceData: data,
+            importMode: "csv",
+            file,
+            drawerFormData: formData,
+          },
+        });
+      }
+    } catch (err) {
+      console.error("Failed to upload CSV to Trial Balance:", err);
+      window.alert(
+        err?.message || "Failed to upload CSV to the existing Trial Balance."
+      );
+    }
   };
 
   if (loading) {
@@ -426,8 +554,10 @@ const TbDetails = () => {
     navigate(`/trial-balances/${trialBalanceId}/journal/0`);
   }
   const AddImport = () => {
-    navigate(`/trial-balances/${trialBalanceId}/imports/0`);
-  }
+    setError(null);
+    setDrawerOpen(true);
+  };
+
   return (
     <div >
       <div className={styles.page}>
@@ -856,7 +986,7 @@ const TbDetails = () => {
         {/* =====================================================
           SUMMARY
       ====================================================== */}
-       
+
         <div className={styles.summary}>
 
           <div className={styles.summaryItem}>
@@ -919,6 +1049,33 @@ const TbDetails = () => {
           </Button>
         </div>
       </div>
+      {/* 
+        <AddDrawer
+              open={drawerOpen}
+
+              onClose={() =>
+                setDrawerOpen(false)
+              }
+
+              title="New Trial Balance"
+
+              fields={trialBalanceFields}
+
+              initialValues={initialValues}
+
+              onSubmit={handleSubmit}
+            /> */}
+
+
+      <AddDrawer
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        title={`Upload CSV — ${trialBalance.refNo || trialBalanceId}`}
+        fields={uploadCsvFields}
+        initialValues={uploadInitialValues}
+        submitText="Upload CSV"
+        onSubmit={handleSubmit}
+      />
     </div>
   );
 };

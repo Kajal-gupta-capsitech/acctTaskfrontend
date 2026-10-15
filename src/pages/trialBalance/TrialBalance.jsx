@@ -984,8 +984,6 @@ const TrialBalance = () => {
     try {
       console.log("handleSubmit Data:", data);
 
-
-     
       let csvRows = [];
 
       if (data.importMode === "csv" && data.file) {

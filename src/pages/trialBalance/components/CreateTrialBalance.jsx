@@ -1421,7 +1421,7 @@ const CreateTrialBalance = () => {
 
       showSuccess(message);
 
-      navigate("/trial-balances");
+      navigate(`/trial-balances/${trialBalanceId}`);
 
     } catch (error) {
       console.error(

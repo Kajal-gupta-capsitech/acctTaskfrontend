@@ -197,6 +197,43 @@ export const TrialBalanceProvider = ({ children }) => {
     }
   };
 
+    const updateCSVupload = async (
+    trialBalanceData
+  ) => {
+    try {
+      setError(null);
+
+      const isFormData =
+        trialBalanceData instanceof FormData;
+
+      const response = await api.post(
+        "/TrialBalances",
+        trialBalanceData,
+        isFormData
+          ? {
+            headers: {
+              "Content-Type": "multipart/form-data",
+            },
+          }
+          : undefined
+      );
+
+
+      // await getTrialBalances();
+
+      return response.data.result;
+    } catch (err) {
+      console.error(
+        "Error creating trial balance:",
+        err
+      );
+
+      setError(err);
+
+      throw err;
+    }
+  };
+
   const importTrialBalancebyId = async (
     trialBalanceData
   ) => {
@@ -266,8 +303,8 @@ export const TrialBalanceProvider = ({ children }) => {
     }
   };
 
-   const importDataToJournal = async (
-    refNo,importsId,
+  const importDataToJournal = async (
+    refNo, importsId,
     importData
   ) => {
     try {
@@ -354,6 +391,36 @@ export const TrialBalanceProvider = ({ children }) => {
     }
   };
 
+
+
+  const deleteTJournal = async (trialBalanceId, id) => {
+    try {
+      setError(null);
+     await api.delete(
+        `/Journals/${id}`
+      );
+
+      // Refresh list after delete
+
+    
+      var  response = await getTrialBalanceDetails(trialBalanceId);
+        
+     
+
+      return response;
+    } catch (err) {
+      console.error(
+        "Error deleting trial balance:",
+        err
+      );
+
+      setError(err);
+
+      throw err;
+    }
+  };
+
+
   // ==========================================
   // CREATE / UPDATE JOURNAL
   // ==========================================
@@ -417,6 +484,7 @@ export const TrialBalanceProvider = ({ children }) => {
         // CRUD
         getTrialBalances,
         createTrialBalance,
+        updateCSVupload,
         updateTrialBalance,
         deleteTrialBalance,
         getTrialBalanceDetails,
@@ -429,6 +497,7 @@ export const TrialBalanceProvider = ({ children }) => {
         importDataToJournal,
         importTrialBalancebyId,
         getImportsById,
+        deleteTJournal
 
       }}
     >
