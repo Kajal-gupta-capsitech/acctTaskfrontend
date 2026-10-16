@@ -149,31 +149,8 @@ const TrialBalance = () => {
   const navigate = useNavigate();
 
 
-  /*
-  |--------------------------------------------------------------------------
-  | Tabs
-  |--------------------------------------------------------------------------
-  */
-
-  // const [selectedValue, setSelectedValue] =
-  //   React.useState("tab1");
-
-
-  /*
-  |--------------------------------------------------------------------------
-  | Drawer
-  |--------------------------------------------------------------------------
-  */
-
   const [isDrawerOpen, setIsDrawerOpen] =
     React.useState(false);
-
-
-  /*
-  |--------------------------------------------------------------------------
-  | Trial Balance Context
-  |--------------------------------------------------------------------------
-  */
 
   const { showSuccess, showError } = useToast();
 
@@ -208,12 +185,6 @@ const TrialBalance = () => {
     [getTrialBalanceById, showError]
   );
 
-
-  /*
-  |--------------------------------------------------------------------------
-  | Accounting Period Context
-  |--------------------------------------------------------------------------
-  */
 
   const {
     accountingPeriods,
@@ -1035,7 +1006,7 @@ const TrialBalance = () => {
 
       const createdRes = await createTrialBalance(payload);
       const successMessage =
-        createdRes?.message || "Trial balance created successfully.";
+      createdRes?.message || "Trial balance created successfully.";
       showSuccess(successMessage);
 
       const createdTrialBalance = createdRes;
@@ -1044,7 +1015,7 @@ const TrialBalance = () => {
       console.log("createdTrialBalance", createdTrialBalance, lastImportId);
       // return;
       if (!trialBalanceId) {
-        throw new Error("Trial Balance ID was not returned by the API.");
+        // throw new Error("Trial Balance ID was not returned by the API.");
       }
 
       setIsDrawerOpen(false);

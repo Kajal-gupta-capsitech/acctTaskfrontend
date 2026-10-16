@@ -180,9 +180,26 @@ export const TrialBalanceProvider = ({ children }) => {
           }
           : undefined
       );
+      var responseData = response?.data
 
 
-      // await getTrialBalances();
+      if (responseData?.status === false) {
+        // Handle API-level failure, even when HTTP status is 200
+        if (responseData?.status === false) {
+          const errorMessage =
+            responseData.errors?.join(", ") ||
+            responseData.message ||
+            "Failed to create trial balance.";
+
+          throw new Error(errorMessage);
+        }
+      }
+      // Also handle a missing result if your API contract requires it
+      if (!responseData?.result) {
+        throw new Error("Invalid response received from the server.");
+      }
+
+      await getTrialBalances();
 
       return response.data.result;
     } catch (err) {
@@ -197,8 +214,8 @@ export const TrialBalanceProvider = ({ children }) => {
     }
   };
 
-    const updateCSVupload = async (
-    trialBalanceData
+  const updateCSVupload = async (
+    refNo, trialBalanceData
   ) => {
     try {
       setError(null);
@@ -206,8 +223,8 @@ export const TrialBalanceProvider = ({ children }) => {
       const isFormData =
         trialBalanceData instanceof FormData;
 
-      const response = await api.post(
-        "/TrialBalances",
+      const response = await api.patch(
+        `/TrialBalances/${refNo}/uploadCSV`,
         trialBalanceData,
         isFormData
           ? {
@@ -221,7 +238,7 @@ export const TrialBalanceProvider = ({ children }) => {
 
       // await getTrialBalances();
 
-      return response.data.result;
+      return response.data;
     } catch (err) {
       console.error(
         "Error creating trial balance:",
@@ -396,16 +413,16 @@ export const TrialBalanceProvider = ({ children }) => {
   const deleteTJournal = async (trialBalanceId, id) => {
     try {
       setError(null);
-     await api.delete(
+      await api.delete(
         `/Journals/${id}`
       );
 
       // Refresh list after delete
 
-    
-      var  response = await getTrialBalanceDetails(trialBalanceId);
-        
-     
+
+      var response = await getTrialBalanceDetails(trialBalanceId);
+
+
 
       return response;
     } catch (err) {

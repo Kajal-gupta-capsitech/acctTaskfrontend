@@ -65,6 +65,38 @@ const AccountingPeriod = () => {
     return new Date(date).toLocaleDateString("en-GB");
   };
 
+  const getNextPeriodDates = () => {
+    if (!accountingPeriods || accountingPeriods.length === 0) {
+      return {
+        periodFrom: null,
+        periodTo: null,
+      };
+    }
+
+    var spreadPeriod = [...accountingPeriods];
+
+    // 1. Sort by periodTo descending to find the period with the latest end date
+    spreadPeriod.sort(
+      (a, b) =>
+        new Date(b.periodTo).getTime() -
+        new Date(a.periodTo).getTime()
+    );
+    console.log("spreadPeriod", spreadPeriod);
+    // 2. Grab that single latest period item
+    const latestPeriod = spreadPeriod[0];
+
+    // 3. Extract both its start and end dates directly
+    const latestStartDate = new Date(latestPeriod.periodFrom);
+    const latestEndDate = new Date(latestPeriod.periodTo);
+
+    return {
+      periodFrom: latestStartDate,
+      periodTo: latestEndDate,
+    };
+  };
+
+
+
   const accountingPeriodFields = [
     {
       name: "periodFrom",
@@ -190,18 +222,30 @@ const AccountingPeriod = () => {
         initialValues={
           editingPeriod
             ? {
-                periodFrom: editingPeriod.periodFrom
-                  ? new Date(editingPeriod.periodFrom)
-                  : null,
-                periodTo: editingPeriod.periodTo
-                  ? new Date(editingPeriod.periodTo)
-                  : null,
-              }
-            : {
-                periodFrom: null,
-                periodTo: null,
-              }
+              periodFrom: editingPeriod.periodFrom
+                ? new Date(editingPeriod.periodFrom)
+                : null,
+              periodTo: editingPeriod.periodTo
+                ? new Date(editingPeriod.periodTo)
+                : null,
+            }
+            : getNextPeriodDates()
         }
+        // initialValues={
+        //   editingPeriod
+        //     ? {
+        //         periodFrom: editingPeriod.periodFrom
+        //           ? new Date(editingPeriod.periodFrom)
+        //           : null,
+        //         periodTo: editingPeriod.periodTo
+        //           ? new Date(editingPeriod.periodTo)
+        //           : null,
+        //       }
+        //     : {
+        //         periodFrom: null,
+        //         periodTo: null,
+        //       }
+        // }
         onSubmit={handleSave}
       />
 

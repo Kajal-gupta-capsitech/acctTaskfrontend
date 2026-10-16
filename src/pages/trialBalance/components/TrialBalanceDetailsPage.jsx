@@ -375,13 +375,13 @@ const TbDetails = () => {
   };
 
   const uploadCsvFields = [
-    // {
-    //   name: "importFormat",
-    //   label: "Import Format",
-    //   type: "select",
-    //   required: true,
-    //   options: [{ value: "default", label: "Default" }],
-    // },
+    {
+      name: "importFormat",
+      label: "Import Format",
+      type: "select",
+      required: true,
+      options: [{ value: "default", label: "Default" }],
+    },
     {
       name: "file",
       label: "CSV File",
@@ -466,40 +466,22 @@ const TbDetails = () => {
 
       const payload = new FormData();
       payload.append("csvFile", file, file.name);
-      payload.append("importFormat", formData.importFormat || "default");
+      payload.append("ImportType", "CSV");
+      payload.append("CsvImportType ", formData.importFormat || "default");
 
       // Uses the existing Trial Balance RefNo from the current route.
 
-      const createdRes = await updateCSVupload(payload);
-      const successMessage =
-        createdRes?.message || "Trial balance update successfully with CSV upload";
-      showSuccess(successMessage);
+      const createdRes = await updateCSVupload(trialBalance.refNo, payload);
+      showSuccess(createdRes?.message || "Trial balance update successfully with CSV upload");
 
-      // if (!response.ok || result?.status === false) {
-      //   throw new Error(
-      //     result?.message ||
-      //     result?.error ||
-      //     `CSV upload failed (${response.status}).`
-      //   );
-      // }
-  const createdTrialBalance = createdRes;
-      // const trialBalanceId = createdTrialBalance?.refNo;
-      const lastImportId = createdTrialBalance?.importIds?.[createdTrialBalance?.importIds.length - 1];
-      console.log("createdTrialBalance", createdTrialBalance, lastImportId);
+      const lastImportId = createdRes?.result?.importIds?.[createdRes?.result?.importIds.length - 1];
+      console.log("createdRes", createdRes?.result, lastImportId);
       setDrawerOpen(false);
 
-      
       await loadTrialBalanceDetails();
 
-      const importResult = createdRes?.result || createdRes;
-      const importId =
-        importResult?.importId ||
-        importResult?.id ||
-        importResult?.import?.id ||
-        importResult?.import?.importId;
-
-      if (importId) {
-        navigate(`/trial-balances/${trialBalanceId}/imports/${importId}`, {
+      if (lastImportId) {
+        navigate(`/trial-balances/${trialBalanceId}/imports/${lastImportId}`, {
           state: {
             trialBalanceData: data,
             importMode: "csv",
@@ -510,9 +492,8 @@ const TbDetails = () => {
       }
     } catch (err) {
       console.error("Failed to upload CSV to Trial Balance:", err);
-      window.alert(
-        err?.message || "Failed to upload CSV to the existing Trial Balance."
-      );
+      showError(err?.message || "Failed to upload CSV to the existing Trial Balance.")
+
     }
   };
 
